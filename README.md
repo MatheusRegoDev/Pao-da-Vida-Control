@@ -5,7 +5,10 @@
 
 ---
 
-![Logo](<img width="600" height="480" alt="logo-pão-da-vida-control" src="https://github.com/user-attachments/assets/35a1ec83-ca02-42b8-a7ce-c42284c0bd1a" />)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/21e112c3-948f-4513-96f9-d2d866fb4431" alt="Logo">
+</div>
+
 
 ---
 ## Visão geral
