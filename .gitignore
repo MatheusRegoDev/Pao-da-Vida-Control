@@ -1,0 +1,98 @@
+# ==============================================================================
+# O QUE É O .GITIGNORE?
+# Este arquivo diz ao Git (o sistema de controle de versão) quais arquivos e 
+# pastas ele DEVE IGNORAR. 
+#
+# Boa prática: Nunca comitarmos (salvarmos no git) arquivos gerados 
+# automaticamente, arquivos de build (compilados), dependências baixadas 
+# da internet (como node_modules) ou arquivos com informações sensíveis 
+# (senhas, chaves de API, etc).
+# ==============================================================================
+
+
+# ==============================================================================
+# 1. FRONTEND: REACT (Node.js)
+# ==============================================================================
+
+# node_modules/ é a pasta onde o NPM/Yarn baixa todas as dependências do projeto.
+# Ela é gigante e cada desenvolvedor deve baixar a sua localmente rodando 'npm install'.
+# Nunca envie para o repositório!
+node_modules/
+
+# Pastas de Build (Produção)
+# Quando você roda 'npm run build', o React gera os arquivos otimizados nestas pastas.
+# Como eles são gerados a partir do seu código fonte, não precisam ir para o Git.
+build/
+dist/
+out/
+
+# Arquivos de log de gerenciadores de pacote
+# Se der erro ao instalar pacotes, esses arquivos são gerados na sua máquina.
+# Não são úteis para outros desenvolvedores da equipe.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Arquivos de ambiente locais (Extremamente Importante!)
+# Arquivos .env contêm variáveis de ambiente (como senhas, banco de dados, tokens de API).
+# Eles NUNCA DEVEM ir para o Git por questões de segurança.
+# Dica de ouro: Versionar apenas um '.env.example' vazio para a equipe saber quais variáveis precisam.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Caches de ferramentas do frontend para acelerar o desenvolvimento
+.eslintcache
+.parcel-cache
+
+
+# ==============================================================================
+# 2. BACKEND: SPRING BOOT (Java / Maven ou Gradle)
+# ==============================================================================
+
+# Arquivos compilados do Java
+# O código fonte (.java) é compilado para arquivos (.class).
+# O Git só precisa armazenar o código fonte legível por humanos!
+*.class
+
+# Pastas de saída do Maven / Gradle
+# Se você usa Maven, a pasta 'target/' contém o executável .jar final e classes.
+# Se usa Gradle, a pasta principal de saída é a 'build/'. Ambas devem ser ignoradas.
+target/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+
+# Arquivos de log do servidor Spring
+*.log
+
+# Relatórios de erro da Máquina Virtual Java (JVM)
+hs_err_pid*
+replay_pid*
+
+
+# ==============================================================================
+# 3. IDEs E SISTEMAS OPERACIONAIS
+# ==============================================================================
+
+# IntelliJ IDEA (Recomendado para o Spring)
+# A pasta .idea e os arquivos .iml guardam configurações específicas da sua máquina.
+# Ignoramos isso para não causar conflitos com as IDEs de outros desenvolvedores.
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Antigravity / Visual Studio Code (Recomendado para o React)
+# A pasta .vscode contém configurações do seu editor local (temas, extensões, etc).
+.vscode/
+.history/
+
+# Sistemas Operacionais
+# O MacOS cria automaticamente este arquivo de metadados nas pastas (muito comum aparecer).
+.DS_Store
+
+# O Windows cria automaticamente este arquivo de cache de miniaturas de imagens.
+Thumbs.db

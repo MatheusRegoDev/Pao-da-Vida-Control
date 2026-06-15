@@ -83,6 +83,9 @@ Atualmente, o **Pão da Vida Control** encontra-se na fase de **desenvolvimento 
 - **Conventional Commits** — padronização das mensagens de commit.
 - **Docker:** Utilizado para a conteinerização e isolamento do ambiente de banco de dados e serviços locais, facilitando o deploy.
 
+### Documentação
+- **[Modelo de Domínio (Diagrama de Classe UML)](docs/diagrama-classe.md)** - Arquitetura lógica do banco de dados relacional e relacionamentos entre as entidades da API Spring Boot.
+
 ## Autor
 
 - [@MatheusRegoDev](https://www.github.com/MatheusRegoDev)
