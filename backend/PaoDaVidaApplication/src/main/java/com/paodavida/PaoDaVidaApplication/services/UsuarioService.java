@@ -2,8 +2,11 @@ package com.paodavida.PaoDaVidaApplication.services;
 
 import com.paodavida.PaoDaVidaApplication.dtos.usuario.UsuarioRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.usuario.UsuarioResponseDto;
+import com.paodavida.PaoDaVidaApplication.exceptions.ResourceNotFoundException;
 import com.paodavida.PaoDaVidaApplication.models.UsuarioModel;
 import com.paodavida.PaoDaVidaApplication.repositories.UsuarioRepository;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +17,11 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository repository) {
+    public UsuarioService(UsuarioRepository repository, @Lazy PasswordEncoder passwordEncoder) {
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -24,6 +29,7 @@ public class UsuarioService {
         UsuarioModel model = new UsuarioModel();
         model.setNome(dto.nome());
         model.setEmail(dto.email());
+        model.setSenha(passwordEncoder.encode(dto.senha()));
         model.setCargo(dto.cargo());
         model.setSetor(dto.setor());
         model.setStatus(dto.status());
@@ -40,15 +46,18 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public UsuarioResponseDto findById(Long id) {
-        UsuarioModel model = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        UsuarioModel model = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
         return mapToDto(model);
     }
 
     @Transactional
     public UsuarioResponseDto update(Long id, UsuarioRequestDto dto) {
-        UsuarioModel model = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        UsuarioModel model = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
         model.setNome(dto.nome());
         model.setEmail(dto.email());
+        // Apenas atualiza a senha se ela vier diferente ou se a lógica do negócio permitir, aqui vamos sobrescrever a senha sempre.
+        // Em um cenário real, teria um endpoint específico para trocar senha.
+        model.setSenha(passwordEncoder.encode(dto.senha()));
         model.setCargo(dto.cargo());
         model.setSetor(dto.setor());
         model.setStatus(dto.status());
@@ -61,7 +70,7 @@ public class UsuarioService {
     @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado");
+            throw new ResourceNotFoundException("Usuário não encontrado");
         }
         repository.deleteById(id);
     }
