@@ -96,3 +96,5 @@ replay_pid*
 
 # O Windows cria automaticamente este arquivo de cache de miniaturas de imagens.
 Thumbs.db
+
+.vscode/

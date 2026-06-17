@@ -84,7 +84,8 @@ Atualmente, o **Pão da Vida Control** encontra-se na fase de **desenvolvimento 
 - **Docker:** Utilizado para a conteinerização e isolamento do ambiente de banco de dados e serviços locais, facilitando o deploy.
 
 ### Documentação
-- **[Modelo de Domínio (Diagrama de Classe UML)](docs/diagrama-classe.md)** - Arquitetura lógica do banco de dados relacional e relacionamentos entre as entidades da API Spring Boot.
+- **[Modelo de Domínio (Diagrama de Classe UML)](docs/diagrama-classe.md)** - Arquitetura lógica do banco de dados relacional e relacionamentos estruturais (adaptado ao frontend).
+- **[Arquitetura do Sistema](ARCHITECTURE.md)** - Visão detalhada da arquitetura do frontend, backend e fluxo de dados do projeto.
 
 ## Autor
 

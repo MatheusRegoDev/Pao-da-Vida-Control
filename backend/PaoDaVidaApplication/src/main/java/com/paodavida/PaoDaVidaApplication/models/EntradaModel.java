@@ -13,21 +13,25 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@Table(name = "tb_categorias")
-public class CategoriaModel implements Serializable {
+@Table(name = "tb_entradas")
+public class EntradaModel implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nome;
-    
-    private String descricao;
-    
-    private Integer totalProdutos;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "produto_id")
+    private ProdutoModel produto;
 
+    private Integer quantidade;
+    
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime criadoEm;
+    private LocalDateTime data;
+    
+    private String observacao;
+    
+    private String responsavel;
 }

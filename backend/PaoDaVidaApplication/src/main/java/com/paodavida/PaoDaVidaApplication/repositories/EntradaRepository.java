@@ -1,9 +1,9 @@
 package com.paodavida.PaoDaVidaApplication.repositories;
 
-import com.paodavida.PaoDaVidaApplication.models.CategoriaModel;
+import com.paodavida.PaoDaVidaApplication.models.EntradaModel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CategoriaRepository extends JpaRepository<CategoriaModel, Long> {
+public interface EntradaRepository extends JpaRepository<EntradaModel, Long> {
 }

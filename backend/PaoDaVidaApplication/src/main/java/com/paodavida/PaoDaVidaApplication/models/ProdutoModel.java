@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,8 +14,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@Table(name = "tb_categorias")
-public class CategoriaModel implements Serializable {
+@Table(name = "tb_produtos")
+public class ProdutoModel implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -22,10 +23,18 @@ public class CategoriaModel implements Serializable {
     private Long id;
 
     private String nome;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id")
+    private CategoriaModel categoria;
+
+    private String unidade;
     
-    private String descricao;
+    private BigDecimal precoVenda;
     
-    private Integer totalProdutos;
+    private Integer estoque;
+    
+    private Integer estoqueMinimo;
 
     @CreationTimestamp
     @Column(updatable = false)
