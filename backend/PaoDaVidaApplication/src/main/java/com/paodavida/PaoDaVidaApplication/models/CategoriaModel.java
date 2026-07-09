@@ -1,33 +1,4 @@
 package com.paodavida.PaoDaVidaApplication.models;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
-@Entity
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(of = "id")
-@Table(name = "tb_categorias")
-public class CategoriaModel implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String nome;
-    
-    private String descricao;
-    
-    private Integer totalProdutos;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime criadoEm;
+public class CategoriaModel {
 }
