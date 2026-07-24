@@ -7,6 +7,10 @@ spring:
   jpa:
     open-in-view: false
 
+  jwt:
+    expiration: ${JWT_EXPIRATION} # 1 hora
+    key: ${JWT_KEY}
+
 ---
 
 # Perfil de testes: usa banco H2 em memória

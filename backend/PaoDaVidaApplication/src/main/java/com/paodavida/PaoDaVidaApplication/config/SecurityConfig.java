@@ -1,0 +1,4 @@
+package com.paodavida.PaoDaVidaApplication.config;
+
+public class SecurityConfig {
+}
