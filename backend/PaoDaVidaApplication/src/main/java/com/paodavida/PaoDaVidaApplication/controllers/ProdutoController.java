@@ -5,6 +5,7 @@ import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoResponseDto;
 import com.paodavida.PaoDaVidaApplication.services.ProdutoService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -16,13 +17,10 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/produtos")
+@RequiredArgsConstructor
 public class ProdutoController {
 
     private final ProdutoService produtoService;
-
-    public ProdutoController(ProdutoService produtoService) {
-        this.produtoService = produtoService;
-    }
 
     @PostMapping
     public ResponseEntity<ProdutoResponseDto> create(@RequestBody @Valid ProdutoRequestDto produtoRequestDto) {

@@ -13,6 +13,7 @@ import java.util.Date;
 
 @Component
 public class TokenProvider {
+
     @Value("${jwt.expiration}")
     private long expirationTime;
 
@@ -22,7 +23,7 @@ public class TokenProvider {
     // Metodo para gerar um token
     public String gerarToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return buildToken(userDetails.getUsername())
+        return buildToken(userDetails.getUsername());
     }
 
     private String buildToken(String username) {
@@ -40,7 +41,7 @@ public class TokenProvider {
     //Metodo para validar um token
     public boolean isTokenValid(String token) {
         try {
-            extraiClaims(toke)
+            extraiClaims(token);
             return true;
         } catch (Exception e) {
             return false;

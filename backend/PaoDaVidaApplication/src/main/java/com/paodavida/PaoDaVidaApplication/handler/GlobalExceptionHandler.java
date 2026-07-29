@@ -82,6 +82,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(400).body(errorResponse);
     }
 
+    @ExceptionHandler(UsuarioDuplicadoException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioDuplicadoException(UsuarioDuplicadoException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Usuário duplicado")
+                .mensagem(ex.getMessage())
+                .status(409)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(409).body(errorResponse);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()

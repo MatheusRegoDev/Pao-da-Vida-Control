@@ -1,7 +1,7 @@
 package com.paodavida.PaoDaVidaApplication.models;
 
 import com.paodavida.PaoDaVidaApplication.models.enums.CargoUsuario;
-import com.paodavida.PaoDaVidaApplication.models.enums.StatusUsuario;
+import com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,11 +21,11 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
-public class UsuariosModel implements UserDetails {
+public class UsuarioModel implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID Id;
+    private UUID id;
 
     @Column(nullable = false)
     private String nome;
@@ -40,22 +40,20 @@ public class UsuariosModel implements UserDetails {
     @Column(name = "cargo_usuario", nullable = false)
     private CargoUsuario cargoUsuario;
 
-    @Column(nullable = false)
-    private String setor;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatusUsuario status;
+    private SetorUsuario setor;
+
+    @Column(nullable = false)
+    private boolean status;
 
     @CreationTimestamp
-    @Column(name = "ultimo_acesso", nullable = false)
+    @Column(name = "ultimo_acesso")
     private Instant ultimoAcesso;
 
     @CreationTimestamp
     @Column(name = "data_criacao", nullable = false)
     private Instant dataCriacao;
-
-    private String avatar;
 
     // ----- Métodos da interface UserDetails -----
 

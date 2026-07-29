@@ -10,6 +10,7 @@ import com.paodavida.PaoDaVidaApplication.exception.UnidadeMedidaException;
 import com.paodavida.PaoDaVidaApplication.models.ProdutoModel;
 import com.paodavida.PaoDaVidaApplication.models.CategoriaModel;
 import com.paodavida.PaoDaVidaApplication.models.enums.UnidadeMedida;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,15 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 @Service
+@RequiredArgsConstructor
 public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final CategoriaRepository categoriaRepository;
 
-    public ProdutoService(ProdutoRepository produtoRepository, CategoriaRepository categoriaRepository) {
-        this.produtoRepository = produtoRepository;
-        this.categoriaRepository = categoriaRepository;
-    }
 
     @Transactional
     public ProdutoResponseDto create(ProdutoRequestDto produtoRequestDto) {
