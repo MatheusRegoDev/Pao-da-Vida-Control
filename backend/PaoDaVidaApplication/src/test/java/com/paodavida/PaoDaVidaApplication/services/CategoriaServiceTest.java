@@ -103,7 +103,7 @@ class CategoriaServiceTest {
         when(categoriaRepository.findAll(pageable)).thenReturn(categoriaPage);
 
         //Act
-        Page<CategoriaResponseDto> resultado = categoriaService.findAll(pageable);
+        Page<CategoriaResponseDto> resultado = categoriaService.findAll( null, pageable);
 
         //Assert
         Assertions.assertEquals(2, resultado.getNumberOfElements());

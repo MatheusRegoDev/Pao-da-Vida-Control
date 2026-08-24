@@ -204,7 +204,7 @@ class ProdutoServiceTest {
 
         when(produtoRepository.findAll(pageable)).thenReturn(produtoPage);
         // Act
-        var resultado = produtoService.findAll(pageable);
+        var resultado = produtoService.findAll(null, null, null, pageable);
         // Assert
         Assertions.assertEquals(2, resultado.getTotalElements());
     }
