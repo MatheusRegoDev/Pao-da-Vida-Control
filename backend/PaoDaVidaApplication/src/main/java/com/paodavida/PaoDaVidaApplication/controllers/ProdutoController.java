@@ -1,6 +1,7 @@
 package com.paodavida.PaoDaVidaApplication.controllers;
 
 
+import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoEstatisticaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoResponseDto;
 import com.paodavida.PaoDaVidaApplication.services.ProdutoService;
@@ -33,13 +34,22 @@ public class ProdutoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProdutoResponseDto>> getAll(Pageable pageable) {
-        return ResponseEntity.ok(produtoService.findAll(pageable));
+    public ResponseEntity<Page<ProdutoResponseDto>> getAll(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) Boolean estoqueCritico,
+            Pageable pageable) {
+        return ResponseEntity.ok(produtoService.findAll(nome, categoriaId, estoqueCritico, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProdutoResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(produtoService.findById(id));
+    }
+
+    @GetMapping("/estatisticas")
+    public ResponseEntity<ProdutoEstatisticaDto> estatisticas() {
+        return ResponseEntity.ok(produtoService.estatisticas());
     }
 
     @PutMapping("/{id}")

@@ -103,4 +103,15 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(500).body(errorResponse);
     }
+
+    @ExceptionHandler(AutenticacaoException.class)
+    public ResponseEntity<ErrorResponse> handleAutenticacaoException(AutenticacaoException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Erro de autenticação")
+                .mensagem("E-mail ou senha inválidos")
+                .status(401)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(401).body(errorResponse);
+    }
 }

@@ -4,5 +4,5 @@ public enum CargoUsuario {
     ADMINISTRADOR,
     GERENTE,
     OPERADOR,
-    VENDENDOR
+    VENDEDOR
 }

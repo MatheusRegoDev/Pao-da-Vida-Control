@@ -11,6 +11,10 @@ jwt:
   expiration: ${JWT_EXPIRATION:3600000} # 1 hora
   key: ${JWT_KEY:mU0Jw17tB9gc0RYTxDAgdyYp/cfAFLdNxUn9aCZew4s=}
 
+admin:
+  email: ${ADMIN_EMAIL:admin@paodavida.com}
+  senha: ${ADMIN_SENHA:TrocarSenha123!}
+
 ---
 
 # Perfil de testes: usa banco H2 em memória
@@ -36,3 +40,7 @@ spring:
 jwt:
   expiration: ${JWT_EXPIRATION:3600000} # 1 hora
   key: ${JWT_KEY:mU0Jw17tB9gc0RYTxDAgdyYp/cfAFLdNxUn9aCZew4s=}
+
+admin:
+  email: ${ADMIN_EMAIL:admin@paodavida.com}
+  senha: ${ADMIN_SENHA:TrocarSenha123!}

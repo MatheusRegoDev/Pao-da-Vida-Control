@@ -1,6 +1,7 @@
 package com.paodavida.PaoDaVidaApplication.controllers;
 
 
+import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaEstatisticaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaResponseDto;
 import com.paodavida.PaoDaVidaApplication.services.CategoriaService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -35,13 +37,18 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<CategoriaResponseDto>> getAll(Pageable pageable) {
-        return ResponseEntity.ok(categoriaService.findAll(pageable));
+    public ResponseEntity<Page<CategoriaResponseDto>> getAll(@RequestParam(required = false) String nome, Pageable pageable) {
+        return ResponseEntity.ok(categoriaService.findAll(nome, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CategoriaResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
+    }
+
+    @GetMapping("/estatisticas")
+    public ResponseEntity<CategoriaEstatisticaDto> estatisticas() {
+        return ResponseEntity.ok(categoriaService.estatisticas());
     }
 
     @PutMapping("/{id}")
@@ -57,4 +64,5 @@ public class CategoriaController {
         return ResponseEntity.noContent().build();
 
     }
+
 }

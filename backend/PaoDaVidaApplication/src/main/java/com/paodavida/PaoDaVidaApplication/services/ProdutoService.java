@@ -2,6 +2,8 @@ package com.paodavida.PaoDaVidaApplication.services;
 
 import com.paodavida.PaoDaVidaApplication.Repositories.ProdutoRepository;
 import com.paodavida.PaoDaVidaApplication.Repositories.CategoriaRepository;
+import com.paodavida.PaoDaVidaApplication.Repositories.specifications.ProdutoSpecification;
+import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoEstatisticaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.produto.ProdutoResponseDto;
 import com.paodavida.PaoDaVidaApplication.exception.NotFoundException;
@@ -13,6 +15,7 @@ import com.paodavida.PaoDaVidaApplication.models.enums.UnidadeMedida;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,8 +73,13 @@ public class ProdutoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProdutoResponseDto> findAll(Pageable pageable) {
-        return produtoRepository.findAll(pageable)
+    public Page<ProdutoResponseDto> findAll(String nome, Long categoriaId, Boolean estoqueCritico, Pageable pageable) {
+        Specification<ProdutoModel> spec = Specification
+                .where(ProdutoSpecification.comNome(nome))
+                .and(ProdutoSpecification.comCategoria(categoriaId))
+                .and(ProdutoSpecification.comEstoqueCritico(estoqueCritico));
+
+        return produtoRepository.findAll(spec, pageable)
                 .map(this::mapToResponseDto);
     }
 
@@ -128,6 +136,16 @@ public class ProdutoService {
         categoriaRepository.save(categoria);
 
         produtoRepository.delete(produtoModel);
+    }
+
+    @Transactional(readOnly = true)
+    public ProdutoEstatisticaDto estatisticas() {
+        long totalProdutos = produtoRepository.count();
+        long categoriasAtivas = produtoRepository.countCategoriasAtivas();
+        BigDecimal valorTotalEstoque = produtoRepository.calcularValorTotalEstoque();
+        long estoqueCritico = produtoRepository.countEstoqueCritico();
+
+        return new ProdutoEstatisticaDto(totalProdutos, categoriasAtivas, valorTotalEstoque, estoqueCritico);
     }
 
     public ProdutoResponseDto mapToResponseDto (ProdutoModel produtoModel) {

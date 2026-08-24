@@ -83,7 +83,7 @@ class UsuarioServiceTest {
         usuarioUpdateDto = UsuarioUpdateDto.builder()
                 .nome("João Miguel Santos Drumond")
                 .email("joaoDrumond26@exemplo.com")
-                .cargo(VENDENDOR)
+                .cargo(VENDEDOR)
                 .setor(VENDAS)
                 .status(true)
                 .build();
@@ -109,7 +109,7 @@ class UsuarioServiceTest {
                 .nome("Ana Clara Souza")
                 .email("ana.souza@exemplo.com")
                 .senha(passwordEncoder.encode("Ana.Clara123"))
-                .cargoUsuario(VENDENDOR)
+                .cargoUsuario(VENDEDOR)
                 .setor(VENDAS)
                 .status(true)
                 .ultimoAcesso(null)

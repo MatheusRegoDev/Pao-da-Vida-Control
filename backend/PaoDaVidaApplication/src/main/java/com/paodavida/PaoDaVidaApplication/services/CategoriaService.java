@@ -2,6 +2,7 @@ package com.paodavida.PaoDaVidaApplication.services;
 
 import com.paodavida.PaoDaVidaApplication.Repositories.CategoriaRepository;
 import com.paodavida.PaoDaVidaApplication.Repositories.ProdutoRepository;
+import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaEstatisticaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.categoria.CategoriaResponseDto;
 import com.paodavida.PaoDaVidaApplication.exception.CategoriaComProdutosException;
@@ -42,10 +43,13 @@ public class CategoriaService {
         return mapToResponseDto(savedCategoria);
     }
 
+
     @Transactional(readOnly = true)
-    public Page<CategoriaResponseDto> findAll(Pageable pageable) {
-        return categoriaRepository.findAll(pageable)
-                .map(this::mapToResponseDto);
+    public Page<CategoriaResponseDto> findAll(String nome, Pageable pageable) {
+        Page<CategoriaModel> categorias = (nome == null || nome.isBlank())
+                ? categoriaRepository.findAll(pageable)
+                : categoriaRepository.findByNomeContainingIgnoreCase(nome, pageable);
+        return categorias.map(this::mapToResponseDto);
     }
 
     @Transactional(readOnly = true)
@@ -97,5 +101,19 @@ public class CategoriaService {
                 totalProdutos != null && totalProdutos > 0,
                 categoriaModel.getDataCriacao()
         );
+    }
+
+    public CategoriaEstatisticaDto estatisticas() {
+
+        long totalCategorias = categoriaRepository.count();
+        long totalProdutos = categoriaRepository.countCategoriasComProdutos();
+        String maiorCategoria = categoriaRepository.findTopByOrderByTotalProdutosDesc()
+                .map(CategoriaModel::getNome)
+                .orElse("Nenhuma categoria");
+        String ultimaCategoriaAdicionada = categoriaRepository.findFirstByOrderByDataCriacaoDesc()
+                .map(CategoriaModel::getNome)
+                .orElse("Nenhuma categoria");
+
+        return new CategoriaEstatisticaDto(totalCategorias, totalProdutos, maiorCategoria, ultimaCategoriaAdicionada);
     }
 }
