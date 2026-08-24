@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pao_da_vida_control
+    environment:
+      POSTGRES_DB: ${POSTGRESDB_NAME}
+      POSTGRES_USER: ${POSTGRESDB_USER}
+      POSTGRES_PASSWORD: ${POSTGRESDB_PASS}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pao_da_vida-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRESDB_USER} -d ${POSTGRESDB_NAME} " ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  pao_da_vida-network:
+    driver: bridge
+
+    
+    

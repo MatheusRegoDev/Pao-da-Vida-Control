@@ -1,7 +1,7 @@
 package com.paodavida.PaoDaVidaApplication.models;
 
 import com.paodavida.PaoDaVidaApplication.models.enums.CargoUsuario;
-import com.paodavida.PaoDaVidaApplication.models.enums.StatusUsuario;
+import com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,87 +9,86 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Getter
-@Setter
+@Table(name = "usuarios")
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id")
-@Table(name = "tb_usuarios")
-public class UsuarioModel implements UserDetails, Serializable {
-    private static final long serialVersionUID = 1L;
+@Getter
+@Setter
+@Builder
+public class UsuarioModel implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
+    @Column(nullable = false)
     private String nome;
-    
-    @Column(unique = true)
+
+    @Column(unique = true, nullable = false)
     private String email;
-    
+
+    @Column(nullable = false)
     private String senha;
 
     @Enumerated(EnumType.STRING)
-    private CargoUsuario cargo;
-
-    private String setor;
+    @Column(name = "cargo_usuario", nullable = false)
+    private CargoUsuario cargoUsuario;
 
     @Enumerated(EnumType.STRING)
-    private StatusUsuario status;
+    @Column(nullable = false)
+    private SetorUsuario setor;
 
-    private LocalDateTime ultimoAcesso;
+    @Column(nullable = false)
+    private boolean status;
 
     @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime criadoEm;
+    @Column(name = "ultimo_acesso")
+    private Instant ultimoAcesso;
 
-    private String avatar;
+    @CreationTimestamp
+    @Column(name = "data_criacao", nullable = false)
+    private Instant dataCriacao;
+
+    // ----- Métodos da interface UserDetails -----
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if(this.cargo == CargoUsuario.ADMINISTRADOR) {
-            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
-        } else if (this.cargo == CargoUsuario.GERENTE) {
-            return List.of(new SimpleGrantedAuthority("ROLE_MANAGER"), new SimpleGrantedAuthority("ROLE_USER"));
-        } else if (this.cargo == CargoUsuario.OPERADOR) {
-            return List.of(new SimpleGrantedAuthority("ROLE_OPERATOR"), new SimpleGrantedAuthority("ROLE_USER"));
-        }
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + cargoUsuario.name()));
     }
 
     @Override
     public String getPassword() {
-        return this.senha;
+        return senha;
     }
 
     @Override
     public String getUsername() {
-        return this.email;
+        return email;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        return UserDetails.super.isAccountNonExpired();
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return this.status == StatusUsuario.ATIVO;
+        return UserDetails.super.isAccountNonLocked();
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        return UserDetails.super.isCredentialsNonExpired();
     }
 
     @Override
     public boolean isEnabled() {
-        return this.status == StatusUsuario.ATIVO;
+        return UserDetails.super.isEnabled();
     }
 }

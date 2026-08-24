@@ -5,15 +5,17 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id")
-@Table(name = "tb_entradas")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Builder
+@Table(name = "tb_entrada")
 public class EntradaModel implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -22,16 +24,19 @@ public class EntradaModel implements Serializable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produto_id")
+    @JoinColumn(name = "produto_id", nullable = false)
     private ProdutoModel produto;
 
-    private Integer quantidade;
-    
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime data;
-    
+    @Column(nullable = false)
+    private BigDecimal quantidade;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsavel_id", nullable = false)
+    private UsuarioModel responsavel;
+
     private String observacao;
-    
-    private String responsavel;
+
+    @CreationTimestamp
+    @Column(name = "data_criacao", updatable = false)
+    private Instant dataCriacao;
 }

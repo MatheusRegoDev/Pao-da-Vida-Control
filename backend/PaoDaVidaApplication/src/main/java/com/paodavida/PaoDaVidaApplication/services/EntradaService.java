@@ -1,112 +1,100 @@
 package com.paodavida.PaoDaVidaApplication.services;
 
-import com.paodavida.PaoDaVidaApplication.dtos.entrada.EntradaRequestDto;
-import com.paodavida.PaoDaVidaApplication.dtos.entrada.EntradaResponseDto;
+import com.paodavida.PaoDaVidaApplication.Repositories.EntradaRepository;
+import com.paodavida.PaoDaVidaApplication.Repositories.ProdutoRepository;
+import com.paodavida.PaoDaVidaApplication.Repositories.specifications.EntradaSpecification;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaRequestDto;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaResponseDto;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaEstatisticaDto;
+import com.paodavida.PaoDaVidaApplication.exception.NotFoundException;
 import com.paodavida.PaoDaVidaApplication.models.EntradaModel;
 import com.paodavida.PaoDaVidaApplication.models.ProdutoModel;
-import com.paodavida.PaoDaVidaApplication.repositories.EntradaRepository;
-import com.paodavida.PaoDaVidaApplication.repositories.ProdutoRepository;
+import com.paodavida.PaoDaVidaApplication.models.UsuarioModel;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Service
+@RequiredArgsConstructor
 public class EntradaService {
 
-    private final EntradaRepository repository;
+    private final EntradaRepository entradaRepository;
     private final ProdutoRepository produtoRepository;
-    private final ProdutoService produtoService;
-
-    public EntradaService(EntradaRepository repository, ProdutoRepository produtoRepository, ProdutoService produtoService) {
-        this.repository = repository;
-        this.produtoRepository = produtoRepository;
-        this.produtoService = produtoService;
-    }
+    private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
 
     @Transactional
     public EntradaResponseDto create(EntradaRequestDto dto) {
-        EntradaModel model = new EntradaModel();
-        model.setQuantidade(dto.quantidade());
-        model.setObservacao(dto.observacao());
-        model.setResponsavel(dto.responsavel());
-        
         ProdutoModel produto = produtoRepository.findById(dto.produtoId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
-        model.setProduto(produto);
-        
-        // Atualiza estoque
-        produto.setEstoque(produto.getEstoque() + dto.quantidade());
+                .orElseThrow(() -> new NotFoundException("Produto não encontrado"));
+
+        UsuarioModel responsavel = usuarioAutenticado();
+
+        EntradaModel entrada = EntradaModel.builder()
+                .produto(produto)
+                .quantidade(dto.quantidade())
+                .responsavel(responsavel)
+                .observacao(dto.observacao())
+                .build();
+
+        EntradaModel saved = entradaRepository.save(entrada);
+
+        produto.setEstoque(produto.getEstoque().add(dto.quantidade()));
         produtoRepository.save(produto);
-        
-        model = repository.save(model);
-        return mapToDto(model);
+
+        return mapToResponseDto(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<EntradaResponseDto> findAll() {
-        return repository.findAll().stream().map(this::mapToDto).collect(Collectors.toList());
+    public Page<EntradaResponseDto> findAll(String nomeProduto, Long produtoId, Pageable pageable) {
+        Specification<EntradaModel> spec = Specification
+                .where(EntradaSpecification.comNomeProduto(nomeProduto))
+                .and(EntradaSpecification.comProduto(produtoId));
+
+        return entradaRepository.findAll(spec, pageable)
+                .map(this::mapToResponseDto);
     }
 
     @Transactional(readOnly = true)
-    public EntradaResponseDto findById(Long id) {
-        EntradaModel model = repository.findById(id).orElseThrow(() -> new RuntimeException("Entrada não encontrada"));
-        return mapToDto(model);
+    public EntradaEstatisticaDto estatisticas() {
+        LocalDate hoje = LocalDate.now(ZONE);
+        Instant inicioHoje = hoje.atStartOfDay(ZONE).toInstant();
+        Instant fimHoje = hoje.plusDays(1).atStartOfDay(ZONE).toInstant();
+        Instant inicioMes = hoje.withDayOfMonth(1).atStartOfDay(ZONE).toInstant();
+        Instant fimMes = hoje.withDayOfMonth(1).plusMonths(1).atStartOfDay(ZONE).toInstant();
+
+        BigDecimal unidadesHoje = entradaRepository.somarQuantidadeNoPeriodo(inicioHoje, fimHoje);
+        long registrosHoje = entradaRepository.contarNoPeriodo(inicioHoje, fimHoje);
+        BigDecimal unidadesNoMes = entradaRepository.somarQuantidadeNoPeriodo(inicioMes, fimMes);
+        long totalRegistros = entradaRepository.count();
+
+        return new EntradaEstatisticaDto(unidadesHoje, registrosHoje, unidadesNoMes, totalRegistros);
     }
 
-    @Transactional
-    public EntradaResponseDto update(Long id, EntradaRequestDto dto) {
-        EntradaModel model = repository.findById(id).orElseThrow(() -> new RuntimeException("Entrada não encontrada"));
-        
-        ProdutoModel produto = produtoRepository.findById(dto.produtoId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
-        
-        // Ajusta estoque com a diferença
-        int diferenca = dto.quantidade() - model.getQuantidade();
-        if(model.getProduto().getId().equals(produto.getId())) {
-            produto.setEstoque(produto.getEstoque() + diferenca);
-            produtoRepository.save(produto);
-        } else {
-            // Se mudou de produto, reverte no antigo e adiciona no novo
-            ProdutoModel antigo = model.getProduto();
-            antigo.setEstoque(antigo.getEstoque() - model.getQuantidade());
-            produtoRepository.save(antigo);
-            
-            produto.setEstoque(produto.getEstoque() + dto.quantidade());
-            produtoRepository.save(produto);
-        }
 
-        model.setProduto(produto);
-        model.setQuantidade(dto.quantidade());
-        model.setObservacao(dto.observacao());
-        model.setResponsavel(dto.responsavel());
-        
-        model = repository.save(model);
-        return mapToDto(model);
+
+    private UsuarioModel usuarioAutenticado() {
+        return (UsuarioModel) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
-    @Transactional
-    public void delete(Long id) {
-        EntradaModel model = repository.findById(id).orElseThrow(() -> new RuntimeException("Entrada não encontrada"));
-        
-        // Reverte estoque
-        ProdutoModel produto = model.getProduto();
-        produto.setEstoque(produto.getEstoque() - model.getQuantidade());
-        produtoRepository.save(produto);
-
-        repository.deleteById(id);
-    }
-
-    public EntradaResponseDto mapToDto(EntradaModel model) {
-        if (model == null) return null;
+    private EntradaResponseDto mapToResponseDto(EntradaModel entrada) {
         return new EntradaResponseDto(
-            model.getId(),
-            produtoService.mapToDto(model.getProduto()),
-            model.getQuantidade(),
-            model.getData(),
-            model.getObservacao(),
-            model.getResponsavel()
+                entrada.getId(),
+                entrada.getProduto().getId(),
+                entrada.getProduto().getNome(),
+                entrada.getQuantidade(),
+                entrada.getResponsavel().getId(),
+                entrada.getResponsavel().getNome(),
+                entrada.getObservacao(),
+                entrada.getDataCriacao()
         );
     }
 }

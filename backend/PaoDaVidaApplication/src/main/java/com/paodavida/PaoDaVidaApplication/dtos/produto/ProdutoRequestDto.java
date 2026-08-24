@@ -1,14 +1,30 @@
 package com.paodavida.PaoDaVidaApplication.dtos.produto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.paodavida.PaoDaVidaApplication.models.enums.UnidadeMedida;
+import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 public record ProdutoRequestDto(
-    @NotBlank(message = "O nome do produto é obrigatório") String nome,
-    @NotNull(message = "A categoria é obrigatória") Long categoriaId,
-    @NotBlank(message = "A unidade é obrigatória") String unidade,
-    @NotNull(message = "O preço de venda é obrigatório") BigDecimal precoVenda,
-    @NotNull(message = "O estoque é obrigatório") Integer estoque,
-    @NotNull(message = "O estoque mínimo é obrigatório") Integer estoqueMinimo
-) {}
+        @NotBlank(message = "O nome do produto não pode ser nulo ou vazio")
+        String nome,
+
+        @NotNull(message = "O produto é obrigatório ter categoria")
+        Long categoriaId,
+
+        @NotNull(message = "O produto é obrigatório ter uma Unidade de Medida")
+        UnidadeMedida unidade,
+
+        @NotNull(message = "O preço do produto não pode ser nulo")
+        @Positive(message = "O preço do produto deve ser um valor positivo")
+        BigDecimal preco,
+
+        @NotNull(message = "O estoque do produto não pode ser nulo")
+        @PositiveOrZero(message = "O estoque do produto deve ser um valor positivo ou zero")
+        BigDecimal estoque,
+
+        @NotNull(message = "O estoque mínimo do produto não pode ser nulo")
+        @PositiveOrZero(message = "O estoque mínimo do produto deve ser um valor positivo ou zero")
+        BigDecimal estoqueMinimo
+) {
+}

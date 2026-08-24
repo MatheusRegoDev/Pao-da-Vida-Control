@@ -1,48 +1,46 @@
 package com.paodavida.PaoDaVidaApplication.controllers;
 
-import com.paodavida.PaoDaVidaApplication.dtos.entrada.EntradaRequestDto;
-import com.paodavida.PaoDaVidaApplication.dtos.entrada.EntradaResponseDto;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaEstatisticaDto;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaRequestDto;
+import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaResponseDto;
 import com.paodavida.PaoDaVidaApplication.services.EntradaService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.List;
+import java.net.URI;
 
 @RestController
-@RequestMapping("/api/entradas")
+@RequiredArgsConstructor
+@RequestMapping("/entradas")
 public class EntradaController {
 
-    private final EntradaService service;
-
-    public EntradaController(EntradaService service) {
-        this.service = service;
-    }
+    private final EntradaService entradaService;
 
     @PostMapping
     public ResponseEntity<EntradaResponseDto> create(@RequestBody @Valid EntradaRequestDto dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
+        EntradaResponseDto entrada = entradaService.create(dto);
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(entrada.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(entrada);
     }
 
     @GetMapping
-    public ResponseEntity<List<EntradaResponseDto>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<Page<EntradaResponseDto>> getAll(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) Long produtoId,
+            Pageable pageable) {
+        return ResponseEntity.ok(entradaService.findAll(nome, produtoId, pageable));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<EntradaResponseDto> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<EntradaResponseDto> update(@PathVariable Long id, @RequestBody @Valid EntradaRequestDto dto) {
-        return ResponseEntity.ok(service.update(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/estatisticas")
+    public ResponseEntity<EntradaEstatisticaDto> estatisticas() {
+        return ResponseEntity.ok(entradaService.estatisticas());
     }
 }

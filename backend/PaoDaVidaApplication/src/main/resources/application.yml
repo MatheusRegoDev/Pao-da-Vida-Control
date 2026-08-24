@@ -1,0 +1,46 @@
+# Configuração padrão (comum a todos os perfis)
+spring:
+  application:
+    name: Pao-da-Vida
+  profiles:
+    active: test
+  jpa:
+    open-in-view: false
+
+jwt:
+  expiration: ${JWT_EXPIRATION:3600000} # 1 hora
+  key: ${JWT_KEY:mU0Jw17tB9gc0RYTxDAgdyYp/cfAFLdNxUn9aCZew4s=}
+
+admin:
+  email: ${ADMIN_EMAIL:admin@paodavida.com}
+  senha: ${ADMIN_SENHA:TrocarSenha123!}
+
+---
+
+# Perfil de testes: usa banco H2 em memória
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+jwt:
+  expiration: ${JWT_EXPIRATION:3600000} # 1 hora
+  key: ${JWT_KEY:mU0Jw17tB9gc0RYTxDAgdyYp/cfAFLdNxUn9aCZew4s=}
+
+admin:
+  email: ${ADMIN_EMAIL:admin@paodavida.com}
+  senha: ${ADMIN_SENHA:TrocarSenha123!}
