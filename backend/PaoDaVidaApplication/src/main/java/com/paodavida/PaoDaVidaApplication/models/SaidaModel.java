@@ -11,17 +11,17 @@ import java.time.Instant;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@NoArgsConstructor
+@EqualsAndHashCode
 @Builder
-@Table(name = "tb_entradas")
-public class EntradaModel implements Serializable {
-    private static final long serialVersionUID = 1L;
+@Table(name= "tb_saidas")
+public class SaidaModel implements Serializable {
+    private long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long Id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id", nullable = false)
@@ -30,13 +30,19 @@ public class EntradaModel implements Serializable {
     @Column(nullable = false)
     private BigDecimal quantidade;
 
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorUnitario;
+
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal valorTotal;
+
+    @CreationTimestamp
+    @Column( name = "data_criacao", nullable = false)
+    private Instant dataCriacao;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsavel_id", nullable = false)
     private UsuarioModel responsavel;
 
     private String observacao;
-
-    @CreationTimestamp
-    @Column(name = "data_criacao", updatable = false)
-    private Instant dataCriacao;
 }

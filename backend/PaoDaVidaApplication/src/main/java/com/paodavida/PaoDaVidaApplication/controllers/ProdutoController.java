@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -24,6 +25,7 @@ public class ProdutoController {
     private final ProdutoService produtoService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<ProdutoResponseDto> create(@RequestBody @Valid ProdutoRequestDto produtoRequestDto) {
         ProdutoResponseDto produto = produtoService.create(produtoRequestDto);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -48,16 +50,19 @@ public class ProdutoController {
     }
 
     @GetMapping("/estatisticas")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<ProdutoEstatisticaDto> estatisticas() {
         return ResponseEntity.ok(produtoService.estatisticas());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<ProdutoResponseDto> update(@PathVariable Long id, @RequestBody @Valid ProdutoRequestDto produtoRequestDto) {
         return ResponseEntity.ok(produtoService.update(id, produtoRequestDto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         produtoService.delete(id);
         return ResponseEntity.noContent().build();

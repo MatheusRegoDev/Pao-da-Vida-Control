@@ -26,6 +26,7 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<UsuarioResponseDto> create(@RequestBody @Valid UsuariosRequestDto usuarioRequestDto) {
         UsuarioResponseDto usuario = usuarioService.create(usuarioRequestDto);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -36,6 +37,7 @@ public class UsuarioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Page<UsuarioResponseDto>> findByTermoCargoSetor(
             @RequestParam(required = false) String termo,
             @RequestParam(required = false) CargoUsuario cargo,
@@ -45,11 +47,13 @@ public class UsuarioController {
     }
 
     @GetMapping("/estatisticas")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<UsuarioEstatisticaDto> estatisticas() {
         return ResponseEntity.ok(usuarioService.estatisticas());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<UsuarioResponseDto> update(
             @PathVariable UUID id,
             @Valid @RequestBody UsuarioUpdateDto dto) {
@@ -57,6 +61,7 @@ public class UsuarioController {
     }
 
     @PatchMapping("/{id}/senha")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Void> redefinirSenha(
             @PathVariable UUID id,
             @Valid @RequestBody UsuarioRedefinirSenhaDto dto) {
@@ -65,6 +70,7 @@ public class UsuarioController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<UsuarioResponseDto> alterarStatus(
             @PathVariable UUID id,
             @RequestBody UsuarioRequestNovoStatus dto) {
@@ -72,6 +78,7 @@ public class UsuarioController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Void> delete (@PathVariable UUID id) {
         usuarioService.delete(id);
         return ResponseEntity.noContent().build();
