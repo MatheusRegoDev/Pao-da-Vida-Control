@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -22,6 +23,7 @@ public class EntradaController {
     private final EntradaService entradaService;
 
     @PostMapping
+    @PreAuthorize("!hasRole('CLIENTE')")
     public ResponseEntity<EntradaResponseDto> create(@RequestBody @Valid EntradaRequestDto dto) {
         EntradaResponseDto entrada = entradaService.create(dto);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -38,8 +40,16 @@ public class EntradaController {
             Pageable pageable) {
         return ResponseEntity.ok(entradaService.findAll(nome, produtoId, pageable));
     }
+    @PutMapping("/{id}")
+    @PreAuthorize("!hasRole('CLIENTE')")
+    public ResponseEntity<EntradaResponseDto> update(@PathVariable Long id, @RequestBody @Valid EntradaRequestDto dto) {
+        return ResponseEntity.ok(entradaService.update(id, dto));
+    }
+
+
 
     @GetMapping("/estatisticas")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<EntradaEstatisticaDto> estatisticas() {
         return ResponseEntity.ok(entradaService.estatisticas());
     }

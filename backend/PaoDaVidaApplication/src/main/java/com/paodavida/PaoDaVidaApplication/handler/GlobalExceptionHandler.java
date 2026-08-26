@@ -114,4 +114,15 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(401).body(errorResponse);
     }
+
+    @ExceptionHandler(EstoqueInsuficienteException.class)
+    public ResponseEntity<ErrorResponse> handleEstoqueInsuficienteException(EstoqueInsuficienteException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Estoque insuficiente")
+                .mensagem(ex.getMessage())
+                .status(409)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(409).body(errorResponse);
+    }
 }

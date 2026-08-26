@@ -27,6 +27,7 @@ public class CategoriaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<CategoriaResponseDto> create(@RequestBody @Valid CategoriaRequestDto categoriaRequestDto) {
         CategoriaResponseDto categoria = categoriaService.create(categoriaRequestDto);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -37,26 +38,31 @@ public class CategoriaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Page<CategoriaResponseDto>> getAll(@RequestParam(required = false) String nome, Pageable pageable) {
         return ResponseEntity.ok(categoriaService.findAll(nome, pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<CategoriaResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
     }
 
     @GetMapping("/estatisticas")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<CategoriaEstatisticaDto> estatisticas() {
         return ResponseEntity.ok(categoriaService.estatisticas());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<CategoriaResponseDto> update(@PathVariable Long id, @RequestBody @Valid CategoriaRequestDto categoriaRequestDto) {
         return ResponseEntity.ok(categoriaService.update(id, categoriaRequestDto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
             @RequestParam(name = "forcar", defaultValue = "false") boolean forcar) {

@@ -6,6 +6,7 @@ import com.paodavida.PaoDaVidaApplication.Repositories.specifications.EntradaSpe
 import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaRequestDto;
 import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaResponseDto;
 import com.paodavida.PaoDaVidaApplication.dtos.entradas.EntradaEstatisticaDto;
+import com.paodavida.PaoDaVidaApplication.exception.EstoqueInsuficienteException;
 import com.paodavida.PaoDaVidaApplication.exception.NotFoundException;
 import com.paodavida.PaoDaVidaApplication.models.EntradaModel;
 import com.paodavida.PaoDaVidaApplication.models.ProdutoModel;
@@ -79,7 +80,41 @@ public class EntradaService {
         return new EntradaEstatisticaDto(unidadesHoje, registrosHoje, unidadesNoMes, totalRegistros);
     }
 
+    @Transactional
+    public EntradaResponseDto update(Long id, EntradaRequestDto dto) {
+        EntradaModel entrada = entradaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Entrada não encontrada"));
 
+        ProdutoModel produtoAntigo = entrada.getProduto();
+        BigDecimal quantidadeAntiga = entrada.getQuantidade();
+
+        // Se o estoque atual for menor que a quantidade dessa entrada, significa
+        // que parte desse estoque já foi vendida — não dá pra "desfazer" com segurança
+        if (produtoAntigo.getEstoque().compareTo(quantidadeAntiga) < 0) {
+            throw new EstoqueInsuficienteException(
+                    "Não é possível editar esta entrada: o estoque atual do produto (" +
+                            produtoAntigo.getEstoque() + ") já é menor que a quantidade original registrada (" +
+                            quantidadeAntiga + "). Parte desse estoque provavelmente já foi vendida.");
+        }
+
+        // Reverte o efeito da entrada antiga
+        produtoAntigo.setEstoque(produtoAntigo.getEstoque().subtract(quantidadeAntiga));
+        produtoRepository.save(produtoAntigo);
+
+        ProdutoModel produtoNovo = produtoRepository.findById(dto.produtoId())
+                .orElseThrow(() -> new NotFoundException("Produto não encontrado"));
+
+        // Aplica o efeito da entrada atualizada
+        produtoNovo.setEstoque(produtoNovo.getEstoque().add(dto.quantidade()));
+        produtoRepository.save(produtoNovo);
+
+        entrada.setProduto(produtoNovo);
+        entrada.setQuantidade(dto.quantidade());
+        entrada.setObservacao(dto.observacao());
+
+        EntradaModel atualizado = entradaRepository.save(entrada);
+        return mapToResponseDto(atualizado);
+    }
 
     private UsuarioModel usuarioAutenticado() {
         return (UsuarioModel) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
