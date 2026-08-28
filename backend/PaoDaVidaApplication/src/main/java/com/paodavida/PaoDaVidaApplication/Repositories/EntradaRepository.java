@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 public interface EntradaRepository extends JpaRepository<EntradaModel, Long>, JpaSpecificationExecutor<EntradaModel> {
 
@@ -18,4 +19,7 @@ public interface EntradaRepository extends JpaRepository<EntradaModel, Long>, Jp
     @Query("SELECT COUNT(e) FROM EntradaModel e " +
             "WHERE e.dataCriacao >= :inicio AND e.dataCriacao < :fim")
     long contarNoPeriodo(@Param("inicio") Instant inicio, @Param("fim") Instant fim);
+
+    @Query("SELECT e FROM EntradaModel e WHERE e.dataCriacao >= :inicio AND e.dataCriacao < :fim")
+    List<EntradaModel> findAllNoPeriodo(@Param("inicio") Instant inicio, @Param("fim") Instant fim);
 }

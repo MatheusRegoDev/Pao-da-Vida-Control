@@ -17,8 +17,8 @@ import java.util.Optional;
 
 import static com.paodavida.PaoDaVidaApplication.models.enums.CargoUsuario.GERENTE;
 import static com.paodavida.PaoDaVidaApplication.models.enums.CargoUsuario.OPERADOR;
-import static com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario.GESTÃO;
-import static com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario.PRODUÇÃO;
+import static com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario.GESTAO;
+import static com.paodavida.PaoDaVidaApplication.models.enums.SetorUsuario.PRODUCAO;
 
 @DataJpaTest
 class UsuarioRepositoryTest {
@@ -33,7 +33,7 @@ class UsuarioRepositoryTest {
                 .email("wesleysadao@exemplo.com")
                 .senha("Senha.123")
                 .cargoUsuario(GERENTE)
-                .setor(GESTÃO)
+                .setor(GESTAO)
                 .status(true)
                 .ultimoAcesso(null)
                 .dataCriacao(Instant.now())
@@ -95,7 +95,7 @@ class UsuarioRepositoryTest {
                         .email("ana.lima@exemplo.com")
                         .senha("Senha.123")
                         .cargoUsuario(OPERADOR)
-                        .setor(PRODUÇÃO)
+                        .setor(PRODUCAO)
                         .status(true)
                         .dataCriacao(Instant.now())
                         .build()
@@ -134,7 +134,7 @@ class UsuarioRepositoryTest {
                         .email("roberto.costa@exemplo.com")
                         .senha("Senha.123")
                         .cargoUsuario(OPERADOR)
-                        .setor(PRODUÇÃO)
+                        .setor(PRODUCAO)
                         .status(false)
                         .dataCriacao(Instant.now())
                         .build()
@@ -157,7 +157,7 @@ class UsuarioRepositoryTest {
                         .email("roberto.costa@exemplo.com")
                         .senha("Senha.123")
                         .cargoUsuario(OPERADOR)
-                        .setor(PRODUÇÃO)
+                        .setor(PRODUCAO)
                         .status(false)
                         .dataCriacao(Instant.now())
                         .build()
@@ -180,7 +180,7 @@ class UsuarioRepositoryTest {
                         .email("ana.lima@exemplo.com")
                         .senha("Senha.123")
                         .cargoUsuario(OPERADOR)
-                        .setor(PRODUÇÃO)
+                        .setor(PRODUCAO)
                         .status(true)
                         .dataCriacao(Instant.now())
                         .build()
@@ -191,7 +191,7 @@ class UsuarioRepositoryTest {
                         .email("joao.pereira@exemplo.com")
                         .senha("Senha.123")
                         .cargoUsuario(OPERADOR)
-                        .setor(PRODUÇÃO)
+                        .setor(PRODUCAO)
                         .status(true)
                         .dataCriacao(Instant.now())
                         .build()

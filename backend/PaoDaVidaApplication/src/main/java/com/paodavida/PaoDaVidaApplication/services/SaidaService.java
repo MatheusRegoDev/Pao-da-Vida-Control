@@ -1,7 +1,7 @@
 package com.paodavida.PaoDaVidaApplication.services;
 
 import com.paodavida.PaoDaVidaApplication.Repositories.ProdutoRepository;
-import com.paodavida.PaoDaVidaApplication.Repositories.specifications.SaidaRepository;
+import com.paodavida.PaoDaVidaApplication.Repositories.SaidaRepository;
 import com.paodavida.PaoDaVidaApplication.Repositories.specifications.SaidaSpecification;
 import com.paodavida.PaoDaVidaApplication.dtos.saidas.SaidaEstatisticaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.saidas.SaidaRequestDto;

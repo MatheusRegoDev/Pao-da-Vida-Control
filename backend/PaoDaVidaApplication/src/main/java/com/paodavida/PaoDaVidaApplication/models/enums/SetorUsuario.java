@@ -1,8 +1,8 @@
 package com.paodavida.PaoDaVidaApplication.models.enums;
 
 public enum SetorUsuario {
-    GESTÃO,
-    PRODUÇÃO,
+    GESTAO,
+    PRODUCAO,
     CONFEITARIA,
     VENDAS,
     FINANCEIRO,

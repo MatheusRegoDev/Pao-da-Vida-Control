@@ -18,7 +18,7 @@ import java.net.URI;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/saidas")
-public class Saidacontroller {
+public class SaidaController {
 
     private final SaidaService saidaService;
 
