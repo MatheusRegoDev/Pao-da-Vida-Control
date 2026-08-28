@@ -61,7 +61,7 @@ class UsuarioServiceTest {
                 .email("mariasantos@exemplo.com")
                 .senha(passwordEncoder.encode("Maria.Santos123"))
                 .cargoUsuario(GERENTE)
-                .setor(GESTÃO)
+                .setor(GESTAO)
                 .status(true)
                 .ultimoAcesso(null)
                 .dataCriacao(Instant.now())

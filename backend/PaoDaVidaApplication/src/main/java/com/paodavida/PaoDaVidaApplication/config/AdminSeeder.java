@@ -38,7 +38,7 @@ public class AdminSeeder implements CommandLineRunner {
                 .email(adminEmail)
                 .senha(passwordEncoder.encode(adminSenha))
                 .cargoUsuario(CargoUsuario.ADMINISTRADOR)
-                .setor(SetorUsuario.GESTÃO)
+                .setor(SetorUsuario.GESTAO)
                 .status(true)
                 .dataCriacao(Instant.now())
                 .build();
