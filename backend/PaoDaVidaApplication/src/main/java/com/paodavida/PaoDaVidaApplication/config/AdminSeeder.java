@@ -23,8 +23,11 @@ public class AdminSeeder implements CommandLineRunner {
     @Value("${admin.email}")
     private String adminEmail;
 
-    @Value("${admin.senha}")
+    @Value("${admin.password}")
     private String adminSenha;
+
+    @Value("${admin.name}")
+    private String adminNome;
 
     @Override
     public void run(String... args){
@@ -34,7 +37,7 @@ public class AdminSeeder implements CommandLineRunner {
         }
 
         UsuarioModel adminUser = UsuarioModel.builder()
-                .nome("Admin")
+                .nome(adminNome)
                 .email(adminEmail)
                 .senha(passwordEncoder.encode(adminSenha))
                 .cargoUsuario(CargoUsuario.ADMINISTRADOR)
