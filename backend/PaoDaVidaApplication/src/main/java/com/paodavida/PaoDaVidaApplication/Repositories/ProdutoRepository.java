@@ -25,4 +25,7 @@ public interface ProdutoRepository extends JpaRepository<ProdutoModel, Long>, Jp
 
     @Query("SELECT COUNT(p) FROM ProdutoModel p WHERE p.estoque < p.estoqueMinimo")
     long countEstoqueCritico();
+
+    @Query("SELECT COALESCE(SUM(p.estoque), 0) FROM ProdutoModel p")
+    BigDecimal somarEstoqueTotal();
 }
