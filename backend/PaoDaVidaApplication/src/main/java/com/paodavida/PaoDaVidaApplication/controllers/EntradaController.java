@@ -23,7 +23,7 @@ public class EntradaController {
     private final EntradaService entradaService;
 
     @PostMapping
-    @PreAuthorize("!hasRole('CLIENTE')")
+    @PreAuthorize("!hasRole('VENDEDOR')")
     public ResponseEntity<EntradaResponseDto> create(@RequestBody @Valid EntradaRequestDto dto) {
         EntradaResponseDto entrada = entradaService.create(dto);
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -41,7 +41,7 @@ public class EntradaController {
         return ResponseEntity.ok(entradaService.findAll(nome, produtoId, pageable));
     }
     @PutMapping("/{id}")
-    @PreAuthorize("!hasRole('CLIENTE')")
+    @PreAuthorize("!hasRole('VENDEDOR')")
     public ResponseEntity<EntradaResponseDto> update(@PathVariable Long id, @RequestBody @Valid EntradaRequestDto dto) {
         return ResponseEntity.ok(entradaService.update(id, dto));
     }
