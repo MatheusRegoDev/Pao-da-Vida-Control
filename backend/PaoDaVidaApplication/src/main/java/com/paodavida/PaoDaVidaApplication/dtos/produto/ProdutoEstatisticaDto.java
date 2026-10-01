@@ -6,6 +6,6 @@ public record ProdutoEstatisticaDto(
         Long totalProdutos,
         Long categoriasAtivas,
         BigDecimal valorTotalEstoque,
-        long EstoqueCritico
+        long estoqueCritico
 ) {
 }

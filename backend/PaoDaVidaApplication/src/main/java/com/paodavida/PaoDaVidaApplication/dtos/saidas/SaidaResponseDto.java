@@ -5,6 +5,7 @@ import java.time.Instant;
 
 public record SaidaResponseDto(
         long id,
+        long produtoId,
         String produtoNome,
         BigDecimal quantidade,
         BigDecimal valorUnitario,

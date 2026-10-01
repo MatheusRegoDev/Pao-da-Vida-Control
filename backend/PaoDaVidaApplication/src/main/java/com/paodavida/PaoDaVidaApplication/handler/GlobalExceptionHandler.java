@@ -1,7 +1,10 @@
 package com.paodavida.PaoDaVidaApplication.handler;
 
 import com.paodavida.PaoDaVidaApplication.exception.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -120,6 +123,39 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .error("Estoque insuficiente")
                 .mensagem(ex.getMessage())
+                .status(409)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(409).body(errorResponse);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Erro de autenticação")
+                .mensagem("E-mail ou senha inválidos")
+                .status(401)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(401).body(errorResponse);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Acesso negado")
+                .mensagem("Você não tem permissão para acessar este recurso")
+                .status(403)
+                .timestamp(java.time.Instant.now())
+                .build();
+        return ResponseEntity.status(403).body(errorResponse);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error("Violação de integridade de dados")
+                .mensagem("Ocorreu um erro de integridade de dados: " + ex.getMostSpecificCause().getMessage())
                 .status(409)
                 .timestamp(java.time.Instant.now())
                 .build();

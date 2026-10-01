@@ -38,13 +38,11 @@ public class CategoriaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<Page<CategoriaResponseDto>> getAll(@RequestParam(required = false) String nome, Pageable pageable) {
         return ResponseEntity.ok(categoriaService.findAll(nome, pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'GERENTE')")
     public ResponseEntity<CategoriaResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(categoriaService.findById(id));
     }

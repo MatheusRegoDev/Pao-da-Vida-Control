@@ -19,4 +19,9 @@ public class DashboarController {
     public ResponseEntity<EstoqueTotalDto> estoqueTotal() {
         return ResponseEntity.ok(dashboardService.estoqueTotal());
     }
+
+    @GetMapping("resumo")
+    public ResponseEntity<?> resumo() {
+        return ResponseEntity.ok(dashboardService.resumo());
+    }
 }

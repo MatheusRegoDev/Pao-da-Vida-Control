@@ -20,6 +20,9 @@ admin:
   email: ${ADMIN_EMAIL}
   password: ${ADMIN_PASS}
 
+frontend:
+  url: ${FRONTEND_URL}
+
 ---
 
 spring:

@@ -22,22 +22,15 @@ public class AutenticacaoService {
     private long expiration;
 
     public TokenResponseDto login(LoginRequestDto loginRequestDto) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequestDto.email(),
-                            loginRequestDto.senha()
-                    )
-            );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequestDto.email(),
+                        loginRequestDto.senha()
+                )
+        );
 
-            String token = tokenProvider.gerarToken(authentication);
+        String token = tokenProvider.gerarToken(authentication);
 
-            return new TokenResponseDto(token, expiration);
-
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Credenciais inválidas");
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao autenticar usuário", e);
-        }
+        return new TokenResponseDto(token, expiration);
     }
 }

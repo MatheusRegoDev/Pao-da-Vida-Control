@@ -63,6 +63,11 @@ public class CategoriaService {
     public CategoriaResponseDto update(Long id, CategoriaRequestDto categoriaRequestDto) {
         CategoriaModel categoriaModel = categoriaRepository.findById(id).orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
 
+        if (!categoriaModel.getNome().equals(categoriaRequestDto.nome()) &&
+            categoriaRepository.existsByNome(categoriaRequestDto.nome())) {
+            throw new CategoriaDuplicadaException("Já existe uma categoria com o nome: " + categoriaRequestDto.nome());
+        }
+
         categoriaModel.setNome(categoriaRequestDto.nome());
         categoriaModel.setDescricao(categoriaRequestDto.descricao());
 
