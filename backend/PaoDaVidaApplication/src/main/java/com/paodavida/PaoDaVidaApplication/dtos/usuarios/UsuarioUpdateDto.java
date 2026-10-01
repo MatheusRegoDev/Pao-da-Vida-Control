@@ -16,7 +16,7 @@ public record UsuarioUpdateDto(
         String email,
 
         @NotNull(message = "Cargo é obrigatório")
-        CargoUsuario cargo,
+        CargoUsuario cargoUsuario,
 
         @NotNull(message = "Setor é obrigatório")
         SetorUsuario setor,

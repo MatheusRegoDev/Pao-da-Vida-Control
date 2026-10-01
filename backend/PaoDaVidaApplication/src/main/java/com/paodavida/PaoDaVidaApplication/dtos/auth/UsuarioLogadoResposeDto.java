@@ -8,6 +8,6 @@ public record UsuarioLogadoResposeDto(
         UUID id,
         String nome,
         String email,
-        CargoUsuario Cargo
+        CargoUsuario cargo
 ) {
 }

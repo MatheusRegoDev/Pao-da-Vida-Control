@@ -95,7 +95,7 @@ public class ProdutoService {
         ProdutoModel produtoModel = produtoRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Produto não encontrado"));
 
-        CategoriaModel categoria = categoriaRepository.findById(produtoRequestDto.categoriaId())
+        CategoriaModel novaCategoria = categoriaRepository.findById(produtoRequestDto.categoriaId())
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
 
         UnidadeMedida unidade = produtoRequestDto.unidade();
@@ -113,8 +113,22 @@ public class ProdutoService {
             }
         }
 
+        // Verifica se a categoria está sendo alterada
+        CategoriaModel categoriaAnterior = produtoModel.getCategoria();
+        if (!categoriaAnterior.getId().equals(novaCategoria.getId())) {
+            // Decrementa o total de produtos na categoria anterior
+            Integer totalAnterior = categoriaAnterior.getTotalProdutos();
+            categoriaAnterior.setTotalProdutos((totalAnterior == null || totalAnterior <= 0) ? 0 : totalAnterior - 1);
+            categoriaRepository.save(categoriaAnterior);
+
+            // Incrementa o total de produtos na nova categoria
+            Integer totalNova = novaCategoria.getTotalProdutos();
+            novaCategoria.setTotalProdutos((totalNova == null ? 0 : totalNova) + 1);
+            categoriaRepository.save(novaCategoria);
+        }
+
         produtoModel.setNome(produtoRequestDto.nome());
-        produtoModel.setCategoria(categoria);
+        produtoModel.setCategoria(novaCategoria);
         produtoModel.setUnidade(produtoRequestDto.unidade());
         produtoModel.setPreco(produtoRequestDto.preco());
         produtoModel.setEstoque(produtoRequestDto.estoque());

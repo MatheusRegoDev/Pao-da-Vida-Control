@@ -34,6 +34,7 @@ public class AdminSeeder implements CommandLineRunner {
 
         if (usuarioRepository.existsByEmail(adminEmail)){
             System.out.println("Admin user already exists.");
+            return;
         }
 
         UsuarioModel adminUser = UsuarioModel.builder()

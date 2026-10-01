@@ -13,15 +13,15 @@ import java.time.Instant;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @Table(name= "tb_saidas")
 public class SaidaModel implements Serializable {
-    private long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long Id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id", nullable = false)
@@ -45,4 +45,5 @@ public class SaidaModel implements Serializable {
     private UsuarioModel responsavel;
 
     private String observacao;
+
 }
