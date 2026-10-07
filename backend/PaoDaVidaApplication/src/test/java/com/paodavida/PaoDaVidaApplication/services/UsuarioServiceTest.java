@@ -83,7 +83,7 @@ class UsuarioServiceTest {
         usuarioUpdateDto = UsuarioUpdateDto.builder()
                 .nome("João Miguel Santos Drumond")
                 .email("joaoDrumond26@exemplo.com")
-                .cargo(VENDEDOR)
+                .cargoUsuario(VENDEDOR)
                 .setor(VENDAS)
                 .status(true)
                 .build();
@@ -265,7 +265,7 @@ class UsuarioServiceTest {
         // Assert
         assertThat(resultado.nome()).isEqualTo(usuarioUpdateDto.nome());
         assertThat(resultado.email()).isEqualTo(usuarioUpdateDto.email());
-        assertThat(resultado.cargoUsuario()).isEqualTo(usuarioUpdateDto.cargo());
+        assertThat(resultado.cargoUsuario()).isEqualTo(usuarioUpdateDto.cargoUsuario());
         assertThat(resultado.setor()).isEqualTo(usuarioUpdateDto.setor());
         assertThat(resultado.status()).isEqualTo(usuarioUpdateDto.status());
 

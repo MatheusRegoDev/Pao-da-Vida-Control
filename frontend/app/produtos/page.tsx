@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,94 +10,166 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
-import { Plus, Pencil, Trash2, Search, Package, AlertTriangle } from "lucide-react"
-import { products as initialProducts, categories, type Product } from "@/lib/data"
+import { Plus, Pencil, Trash2, Search, Package, AlertTriangle, Loader2 } from "lucide-react"
 
-const unidades = ["unid", "kg", "g", "L", "mL", "fatia", "dúzia", "caixa", "bandeja"]
+import { produtoService } from "@/services/produto.service"
+import { categoriaService } from "@/services/categoria.service"
+import {
+  type ProdutoResponseDto,
+  type CategoriaResponseDto,
+  type UnidadeMedida,
+  UNIDADE_LABELS,
+} from "@/lib/types"
+
+const unidades: { value: UnidadeMedida; label: string }[] = (
+  Object.entries(UNIDADE_LABELS) as [UnidadeMedida, string][]
+).map(([value, label]) => ({ value, label }))
 
 export default function ProdutosPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [products, setProducts] = useState<ProdutoResponseDto[]>([])
+  const [categories, setCategories] = useState<CategoriaResponseDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
-  const [editing, setEditing] = useState<Product | null>(null)
-  const [form, setForm] = useState({
-    nome: "", categoriaId: "", unidade: "unid",
-    precoVenda: "", estoque: "", estoqueMinimo: "",
+  const [editing, setEditing] = useState<ProdutoResponseDto | null>(null)
+
+  const [form, setForm] = useState<{
+    nome: string
+    categoriaId: string
+    unidade: UnidadeMedida
+    preco: string
+    estoque: string
+    estoqueMinimo: string
+  }>({
+    nome: "",
+    categoriaId: "",
+    unidade: "UNIDADE",
+    preco: "",
+    estoque: "",
+    estoqueMinimo: "",
   })
 
+  const carregarDados = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [prodPage, catPage] = await Promise.all([
+        produtoService.listar({
+          nome: search.trim() || undefined,
+          categoriaId: filterCategory !== "all" ? Number(filterCategory) : undefined,
+          estoqueCritico: filterStatus === "baixo" ? true : undefined,
+          size: 100,
+        }),
+        categoriaService.listar(undefined, 0, 100),
+      ])
+      setProducts(prodPage.content || [])
+      setCategories(catPage.content || [])
+    } catch (err) {
+      console.error("Erro ao carregar produtos:", err)
+    } finally {
+      setLoading(false)
+    }
+  }, [search, filterCategory, filterStatus])
+
+  useEffect(() => {
+    carregarDados()
+  }, [carregarDados])
+
+  // Filtragem local adicional caso status seja "ok" (estoque normal)
   const filtered = products.filter(p => {
-    const matchSearch = p.nome.toLowerCase().includes(search.toLowerCase())
-    const matchCat = filterCategory === "all" || String(p.categoriaId) === filterCategory
-    const matchStatus = filterStatus === "all"
-      || (filterStatus === "baixo" && p.estoque < p.estoqueMinimo)
-      || (filterStatus === "ok" && p.estoque >= p.estoqueMinimo)
-    return matchSearch && matchCat && matchStatus
+    if (filterStatus === "ok") {
+      return p.estoque >= p.estoqueMinimo
+    }
+    return true
   })
 
   function openNew() {
     setEditing(null)
-    setForm({ nome: "", categoriaId: "", unidade: "unid", precoVenda: "", estoque: "", estoqueMinimo: "" })
+    setForm({
+      nome: "",
+      categoriaId: categories.length > 0 ? String(categories[0].id) : "",
+      unidade: "UNIDADE",
+      preco: "",
+      estoque: "0",
+      estoqueMinimo: "10",
+    })
     setDialogOpen(true)
   }
 
-  function openEdit(p: Product) {
+  function openEdit(p: ProdutoResponseDto) {
     setEditing(p)
     setForm({
       nome: p.nome,
       categoriaId: String(p.categoriaId),
       unidade: p.unidade,
-      precoVenda: String(p.precoVenda),
+      preco: String(p.preco),
       estoque: String(p.estoque),
       estoqueMinimo: String(p.estoqueMinimo),
     })
     setDialogOpen(true)
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.nome.trim() || !form.categoriaId) return
-    const cat = categories.find(c => c.id === Number(form.categoriaId))
-    if (editing) {
-      setProducts(prev => prev.map(p => p.id === editing.id ? {
-        ...p,
-        nome: form.nome,
-        categoriaId: Number(form.categoriaId),
-        categoriaNome: cat?.nome ?? "",
-        unidade: form.unidade,
-        precoVenda: Number(form.precoVenda),
-        estoque: Number(form.estoque),
-        estoqueMinimo: Number(form.estoqueMinimo),
-      } : p))
-    } else {
-      const newP: Product = {
-        id: Math.max(...products.map(p => p.id)) + 1,
-        nome: form.nome,
-        categoriaId: Number(form.categoriaId),
-        categoriaNome: cat?.nome ?? "",
-        unidade: form.unidade,
-        precoVenda: Number(form.precoVenda),
-        estoque: Number(form.estoque),
-        estoqueMinimo: Number(form.estoqueMinimo),
-        criadoEm: new Date().toISOString().split("T")[0],
-      }
-      setProducts(prev => [...prev, newP])
+    setSaving(true)
+    const payload = {
+      nome: form.nome.trim(),
+      categoriaId: Number(form.categoriaId),
+      unidade: form.unidade,
+      preco: Number(form.preco) || 0,
+      estoque: Number(form.estoque) || 0,
+      estoqueMinimo: Number(form.estoqueMinimo) || 0,
     }
-    setDialogOpen(false)
+
+    try {
+      if (editing) {
+        await produtoService.atualizar(editing.id, payload)
+      } else {
+        await produtoService.criar(payload)
+      }
+      setDialogOpen(false)
+      await carregarDados()
+    } catch (err: any) {
+      alert(err.message || "Erro ao salvar produto")
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function handleDelete() {
-    if (deleteId !== null) {
-      setProducts(prev => prev.filter(p => p.id !== deleteId))
+  async function handleDelete() {
+    if (deleteId === null) return
+    setDeleting(true)
+    try {
+      await produtoService.remover(deleteId)
       setDeleteId(null)
+      await carregarDados()
+    } catch (err: any) {
+      alert(err.message || "Erro ao remover produto")
+    } finally {
+      setDeleting(false)
     }
   }
 
   const lowStockCount = products.filter(p => p.estoque < p.estoqueMinimo).length
+  const totalEstoqueValor = products.reduce((acc, p) => acc + (p.estoque * (p.preco || 0)), 0)
 
   return (
     <AppLayout title="Produtos" description="Gerencie o catálogo de produtos da padaria">
@@ -107,18 +179,27 @@ export default function ProdutosPage() {
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input placeholder="Buscar produtos..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm w-56" />
+              <Input
+                placeholder="Buscar produtos..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 h-9 text-sm w-56"
+              />
             </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <Select value={filterCategory} onValueChange={v => setFilterCategory(v ?? "all")}>
               <SelectTrigger className="h-9 text-sm w-44">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>)}
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.nome}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select value={filterStatus} onValueChange={v => setFilterStatus(v ?? "all")}>
               <SelectTrigger className="h-9 text-sm w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -139,14 +220,28 @@ export default function ProdutosPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: "Total de Produtos", value: products.length, color: "" },
-            { label: "Categorias Ativas", value: new Set(products.map(p => p.categoriaId)).size, color: "" },
-            { label: "Valor Total Estoque", value: `R$ ${products.reduce((a, p) => a + p.estoque * p.precoVenda, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, color: "" },
-            { label: "Estoque Crítico", value: lowStockCount, color: lowStockCount > 0 ? "text-destructive" : "" },
+            {
+              label: "Categorias Ativas",
+              value: new Set(products.map(p => p.categoriaId)).size,
+              color: "",
+            },
+            {
+              label: "Valor Total Estoque",
+              value: `R$ ${totalEstoqueValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+              color: "",
+            },
+            {
+              label: "Estoque Crítico",
+              value: lowStockCount,
+              color: lowStockCount > 0 ? "text-destructive" : "",
+            },
           ].map(s => (
             <Card key={s.label} className="border-border/60">
               <CardContent className="pt-4 pb-4">
                 <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className={`mt-1 text-lg font-bold text-foreground truncate ${s.color}`}>{s.value}</p>
+                <p className={`mt-1 text-lg font-bold text-foreground truncate ${s.color}`}>
+                  {s.value}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -156,7 +251,9 @@ export default function ProdutosPage() {
         <Card className="border-border/60">
           <CardHeader className="pb-0">
             <CardTitle className="text-sm font-semibold">Catálogo de Produtos</CardTitle>
-            <CardDescription className="text-xs">{filtered.length} produto(s) encontrado(s)</CardDescription>
+            <CardDescription className="text-xs">
+              {filtered.length} produto(s) encontrado(s)
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0 mt-3">
             <Table>
@@ -171,7 +268,14 @@ export default function ProdutosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
+                      <Loader2 className="size-6 mx-auto mb-2 animate-spin opacity-50" />
+                      <p>Carregando produtos...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-12 text-center text-sm text-muted-foreground">
                       <Package className="size-8 mx-auto mb-2 opacity-30" />
@@ -180,8 +284,11 @@ export default function ProdutosPage() {
                   </TableRow>
                 ) : (
                   filtered.map(product => {
-                    const pct = Math.min((product.estoque / product.estoqueMinimo) * 100, 100)
+                    const maxStock = product.estoqueMinimo > 0 ? product.estoqueMinimo : 1
+                    const pct = Math.min((product.estoque / maxStock) * 100, 100)
                     const isLow = product.estoque < product.estoqueMinimo
+                    const unidadeLabel = UNIDADE_LABELS[product.unidade] || product.unidade
+
                     return (
                       <TableRow key={product.id} className="border-border/40 hover:bg-muted/40">
                         <TableCell className="pl-6 py-3">
@@ -189,34 +296,53 @@ export default function ProdutosPage() {
                             {isLow && <AlertTriangle className="size-3.5 text-destructive shrink-0" />}
                             <div>
                               <p className="text-sm font-medium text-foreground">{product.nome}</p>
-                              <p className="text-xs text-muted-foreground">{product.unidade}</p>
+                              <p className="text-xs text-muted-foreground">{unidadeLabel}</p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="py-3">
-                          <Badge variant="outline" className="text-xs">{product.categoriaNome}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {product.categoriaNome}
+                          </Badge>
                         </TableCell>
                         <TableCell className="py-3 text-right text-sm font-medium text-foreground">
-                          R$ {product.precoVenda.toFixed(2).replace(".", ",")}
+                          R$ {product.preco.toFixed(2).replace(".", ",")}
                         </TableCell>
                         <TableCell className="py-3 text-right">
-                          <span className={`text-sm font-semibold ${isLow ? "text-destructive" : "text-foreground"}`}>
+                          <span
+                            className={`text-sm font-semibold ${isLow ? "text-destructive" : "text-foreground"}`}
+                          >
                             {product.estoque}
                           </span>
-                          <span className="text-xs text-muted-foreground"> / {product.estoqueMinimo}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            / {product.estoqueMinimo}
+                          </span>
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="flex items-center gap-2">
                             <Progress value={pct} className="h-1.5 flex-1" />
-                            <span className="text-xs text-muted-foreground w-7 text-right">{Math.round(pct)}%</span>
+                            <span className="text-xs text-muted-foreground w-7 text-right">
+                              {Math.round(pct)}%
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="py-3 pr-6">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm" className="size-8 p-0" onClick={() => openEdit(product)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="size-8 p-0"
+                              onClick={() => openEdit(product)}
+                            >
                               <Pencil className="size-3.5" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="size-8 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteId(product.id)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="size-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => setDeleteId(product.id)}
+                            >
                               <Trash2 className="size-3.5" />
                             </Button>
                           </div>
@@ -231,73 +357,147 @@ export default function ProdutosPage() {
         </Card>
       </div>
 
-      {/* Dialog */}
+      {/* Dialog Criação / Edição */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Produto" : "Novo Produto"}</DialogTitle>
-            <DialogDescription className="text-xs">Preencha as informações do produto.</DialogDescription>
+            <DialogDescription className="text-xs">
+              Preencha as informações do produto.
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="col-span-2 flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Nome <span className="text-destructive">*</span></Label>
-              <Input placeholder="Ex: Pão Francês" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} className="h-9 text-sm" />
+              <Label className="text-xs font-medium">
+                Nome <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                placeholder="Ex: Pão Francês"
+                value={form.nome}
+                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Categoria <span className="text-destructive">*</span></Label>
-              <Select value={form.categoriaId} onValueChange={v => setForm(f => ({ ...f, categoriaId: v }))}>
+              <Label className="text-xs font-medium">
+                Categoria <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.categoriaId}
+                onValueChange={v => setForm(f => ({ ...f, categoriaId: v ?? "" }))}
+              >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>)}
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Unidade</Label>
-              <Select value={form.unidade} onValueChange={v => setForm(f => ({ ...f, unidade: v }))}>
+              <Select
+                value={form.unidade}
+                onValueChange={v => setForm(f => ({ ...f, unidade: (v as UnidadeMedida) || "UNIDADE" }))}
+              >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {unidades.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  {unidades.map(u => (
+                    <SelectItem key={u.value} value={u.value}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Preço de Venda (R$)</Label>
-              <Input type="number" step="0.01" placeholder="0,00" value={form.precoVenda} onChange={e => setForm(f => ({ ...f, precoVenda: e.target.value }))} className="h-9 text-sm" />
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0,00"
+                value={form.preco}
+                onChange={e => setForm(f => ({ ...f, preco: e.target.value }))}
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Estoque Atual</Label>
-              <Input type="number" placeholder="0" value={form.estoque} onChange={e => setForm(f => ({ ...f, estoque: e.target.value }))} className="h-9 text-sm" />
+              <Input
+                type="number"
+                placeholder="0"
+                value={form.estoque}
+                onChange={e => setForm(f => ({ ...f, estoque: e.target.value }))}
+                className="h-9 text-sm"
+              />
             </div>
             <div className="col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Estoque Mínimo</Label>
-              <Input type="number" placeholder="0" value={form.estoqueMinimo} onChange={e => setForm(f => ({ ...f, estoqueMinimo: e.target.value }))} className="h-9 text-sm" />
+              <Input
+                type="number"
+                placeholder="0"
+                value={form.estoqueMinimo}
+                onChange={e => setForm(f => ({ ...f, estoqueMinimo: e.target.value }))}
+                className="h-9 text-sm"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSave} disabled={!form.nome.trim() || !form.categoriaId}>
-              {editing ? "Salvar Alterações" : "Criar Produto"}
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!form.nome.trim() || !form.categoriaId || saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                  Salvando...
+                </>
+              ) : editing ? (
+                "Salvar Alterações"
+              ) : (
+                "Criar Produto"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete */}
+      {/* Confirmação de Exclusão */}
       <AlertDialog open={deleteId !== null} onOpenChange={o => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação removerá o produto permanentemente do sistema.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Esta ação removerá o produto permanentemente do sistema.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                  Excluindo...
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

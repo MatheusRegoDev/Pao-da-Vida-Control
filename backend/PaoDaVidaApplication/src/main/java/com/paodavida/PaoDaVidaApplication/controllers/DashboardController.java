@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/dashboard")
-public class DashboarController {
+public class DashboardController {
 
     private final DashboardService dashboardService;
 
@@ -20,7 +20,7 @@ public class DashboarController {
         return ResponseEntity.ok(dashboardService.estoqueTotal());
     }
 
-    @GetMapping("resumo")
+    @GetMapping("/resumo")
     public ResponseEntity<?> resumo() {
         return ResponseEntity.ok(dashboardService.resumo());
     }

@@ -1,6 +1,5 @@
 package com.paodavida.PaoDaVidaApplication.Repositories;
 
-import com.paodavida.PaoDaVidaApplication.dtos.relatorios.CategoriaVendaDto;
 import com.paodavida.PaoDaVidaApplication.dtos.relatorios.TopProdutosDto;
 import com.paodavida.PaoDaVidaApplication.models.SaidaModel;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,14 +24,16 @@ public interface SaidaRepository extends JpaRepository<SaidaModel, Long>, JpaSpe
     @Query("SELECT s FROM SaidaModel s WHERE s.dataCriacao >= :inicio AND s.dataCriacao < :fim")
     List<SaidaModel> findAllNoPeriodo(@Param("inicio") Instant inicio, @Param("fim") Instant fim);
 
+    // Projeção simples (Object[]): Hibernate não consegue montar o record
+    // CategoriaVendaDto aqui, pois o "percentual" é calculado no serviço.
     @Query("""
-    SELECT (c.nome, SUM(s.quantidade))
+    SELECT c.nome, SUM(s.quantidade)
     FROM SaidaModel s JOIN s.produto p JOIN p.categoria c
     WHERE s.dataCriacao >= :inicio AND s.dataCriacao < :fim
     GROUP BY c.nome
     ORDER BY SUM(s.quantidade) DESC
     """)
-    List<CategoriaVendaDto> vendasPorCategoria(@Param("inicio") Instant inicio, @Param("fim") Instant fim);
+    List<Object[]> vendasPorCategoria(@Param("inicio") Instant inicio, @Param("fim") Instant fim);
 
     @Query("""
     SELECT p.nome, c.nome, SUM(s.quantidade), SUM(s.valorTotal)

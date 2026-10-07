@@ -1,0 +1,5 @@
+# Scripts de pós-instalação (build scripts) autorizados.
+# Sem isso o pnpm 10+ bloqueia e o `pnpm install` falha com ERR_PNPM_IGNORED_BUILDS.
+allowBuilds:
+  msw: true
+  sharp: true

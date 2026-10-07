@@ -1,0 +1,7 @@
+target
+*.iml
+.env
+erro.log
+HELP.md
+.idea
+.git

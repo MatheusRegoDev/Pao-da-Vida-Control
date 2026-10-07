@@ -91,12 +91,10 @@ export function AppSidebar() {
                   const isActive = pathname === item.href
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link href={item.href} className="flex items-center gap-3">
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                          {isActive && <ChevronRight className="ml-auto size-3.5 opacity-60" />}
-                        </Link>
+                      <SidebarMenuButton render={<Link href={item.href} />} isActive={isActive}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                        {isActive && <ChevronRight className="ml-auto size-3.5 opacity-60" />}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )

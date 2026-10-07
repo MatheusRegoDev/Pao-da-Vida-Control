@@ -43,6 +43,9 @@ pnpm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+GUIA_INTEGRACAO.md
+INTEGRACAO_FRONTEND.md
+DOCKER.md
 
 # Caches de ferramentas do frontend para acelerar o desenvolvimento
 .eslintcache

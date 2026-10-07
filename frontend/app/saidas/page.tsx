@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AppLayout } from "@/components/app-layout"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,75 +12,155 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, ArrowUpCircle, DollarSign, TrendingUp, ShoppingCart } from "lucide-react"
-import { stockExits as initialExits, products, type StockExit } from "@/lib/data"
+import { Plus, Search, ArrowUpCircle, DollarSign, TrendingUp, ShoppingCart, Pencil, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-const responsaveis = ["Carlos Silva", "Ana Lima", "Maria Santos", "João Pereira", "Luísa Andrade"]
+import { saidaService } from "@/services/saida.service"
+import { produtoService } from "@/services/produto.service"
+import type { SaidaResponseDto, ProdutoResponseDto } from "@/lib/types"
 
 export default function SaidasPage() {
-  const [exits, setExits] = useState<StockExit[]>(initialExits)
+  const [exits, setExits] = useState<SaidaResponseDto[]>([])
+  const [products, setProducts] = useState<ProdutoResponseDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
   const [search, setSearch] = useState("")
   const [filterProduct, setFilterProduct] = useState("all")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({
-    produtoId: "", quantidade: "", observacao: "", responsavel: "",
+    produtoId: "",
+    quantidade: "",
+    observacao: "",
   })
 
-  const selectedProduct = products.find(p => p.id === Number(form.produtoId))
-  const previewTotal = selectedProduct && form.quantidade
-    ? (selectedProduct.precoVenda * Number(form.quantidade)).toFixed(2).replace(".", ",")
-    : null
-
-  const filtered = exits
-    .filter(e => {
-      const matchSearch = e.produtoNome.toLowerCase().includes(search.toLowerCase()) ||
-        e.responsavel.toLowerCase().includes(search.toLowerCase())
-      const matchProd = filterProduct === "all" || String(e.produtoId) === filterProduct
-      return matchSearch && matchProd
-    })
-    .sort((a, b) => b.data.localeCompare(a.data))
-
-  function handleSave() {
-    if (!form.produtoId || !form.quantidade || !form.responsavel) return
-    const produto = products.find(p => p.id === Number(form.produtoId))
-    if (!produto) return
-    const qty = Number(form.quantidade)
-    const newExit: StockExit = {
-      id: Math.max(...exits.map(e => e.id)) + 1,
-      produtoId: produto.id,
-      produtoNome: produto.nome,
-      quantidade: qty,
-      valorUnitario: produto.precoVenda,
-      valorTotal: produto.precoVenda * qty,
-      data: new Date().toISOString(),
-      observacao: form.observacao,
-      responsavel: form.responsavel,
+  const carregarDados = useCallback(async () => {
+    setLoading(true)
+    try {
+      const prodId = filterProduct !== "all" ? Number(filterProduct) : undefined
+      const [saidasRes, produtosRes] = await Promise.all([
+        saidaService.listar(search.trim() || undefined, prodId, 0, 100),
+        produtoService.listar({ size: 100 }),
+      ])
+      setExits(saidasRes.content || [])
+      setProducts(produtosRes.content || [])
+    } catch (err) {
+      console.error("Erro ao carregar saídas:", err)
+    } finally {
+      setLoading(false)
     }
-    setExits(prev => [newExit, ...prev])
-    setForm({ produtoId: "", quantidade: "", observacao: "", responsavel: "" })
-    setDialogOpen(false)
+  }, [search, filterProduct])
+
+  useEffect(() => {
+    carregarDados()
+  }, [carregarDados])
+
+  const selectedProduct = products.find(p => p.id === Number(form.produtoId))
+  const previewTotal =
+    selectedProduct && form.quantidade && Number(form.quantidade) > 0
+      ? (selectedProduct.preco * Number(form.quantidade)).toFixed(2).replace(".", ",")
+      : null
+
+  function openNew() {
+    setEditingId(null)
+    setForm({
+      produtoId: products.length > 0 ? String(products[0].id) : "",
+      quantidade: "",
+      observacao: "",
+    })
+    setDialogOpen(true)
+  }
+
+  function handleEdit(exit: SaidaResponseDto) {
+    setEditingId(exit.id)
+    setForm({
+      produtoId: String(exit.produtoId),
+      quantidade: String(exit.quantidade),
+      observacao: exit.observacao || "",
+    })
+    setDialogOpen(true)
+  }
+
+  async function handleSave() {
+    if (!form.produtoId || !form.quantidade || Number(form.quantidade) <= 0) return
+    setSaving(true)
+
+    const payload = {
+      produtoId: Number(form.produtoId),
+      quantidade: Number(form.quantidade),
+      observacao: form.observacao.trim() || undefined,
+    }
+
+    try {
+      if (editingId !== null) {
+        await saidaService.atualizar(editingId, payload)
+      } else {
+        await saidaService.criar(payload)
+      }
+      setDialogOpen(false)
+      setForm({ produtoId: "", quantidade: "", observacao: "" })
+      setEditingId(null)
+      await carregarDados()
+    } catch (err: any) {
+      alert(err.message || "Erro ao registrar saída de venda")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const todayStr = new Date().toISOString().split("T")[0]
   const mesStr = new Date().toISOString().slice(0, 7)
 
-  const receitaHoje = exits.filter(e => e.data.startsWith(todayStr)).reduce((a, e) => a + e.valorTotal, 0)
-  const unidadesHoje = exits.filter(e => e.data.startsWith(todayStr)).reduce((a, e) => a + e.quantidade, 0)
-  const receitaMes = exits.filter(e => e.data.startsWith(mesStr)).reduce((a, e) => a + e.valorTotal, 0)
-  const ticketMedio = exits.length > 0 ? exits.reduce((a, e) => a + e.valorTotal, 0) / exits.length : 0
+  const receitaHoje = exits
+    .filter(e => e.dataCriacao && e.dataCriacao.startsWith(todayStr))
+    .reduce((a, e) => a + (e.valorTotal || 0), 0)
+
+  const unidadesHoje = exits
+    .filter(e => e.dataCriacao && e.dataCriacao.startsWith(todayStr))
+    .reduce((a, e) => a + (e.quantidade || 0), 0)
+
+  const receitaMes = exits
+    .filter(e => e.dataCriacao && e.dataCriacao.startsWith(mesStr))
+    .reduce((a, e) => a + (e.valorTotal || 0), 0)
+
+  const ticketMedio = exits.length > 0 ? exits.reduce((a, e) => a + (e.valorTotal || 0), 0) / exits.length : 0
 
   return (
     <AppLayout title="Saída de Vendas" description="Registre as vendas e saídas de produtos do estoque">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:gap-6">
         {/* Summary */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {[
-            { label: "Receita Hoje", value: `R$ ${receitaHoje.toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-green-600", bg: "bg-green-50" },
-            { label: "Unidades Vendidas Hoje", value: unidadesHoje, icon: ShoppingCart, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Receita do Mês", value: `R$ ${receitaMes.toFixed(2).replace(".", ",")}`, icon: TrendingUp, color: "text-chart-2", bg: "bg-chart-2/10" },
-            { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2).replace(".", ",")}`, icon: ArrowUpCircle, color: "text-muted-foreground", bg: "bg-muted" },
+            {
+              label: "Receita Hoje",
+              value: `R$ ${receitaHoje.toFixed(2).replace(".", ",")}`,
+              icon: DollarSign,
+              color: "text-green-600",
+              bg: "bg-green-50",
+            },
+            {
+              label: "Unidades Vendidas Hoje",
+              value: unidadesHoje,
+              icon: ShoppingCart,
+              color: "text-primary",
+              bg: "bg-primary/10",
+            },
+            {
+              label: "Receita do Mês",
+              value: `R$ ${receitaMes.toFixed(2).replace(".", ",")}`,
+              icon: TrendingUp,
+              color: "text-chart-2",
+              bg: "bg-chart-2/10",
+            },
+            {
+              label: "Ticket Médio",
+              value: `R$ ${ticketMedio.toFixed(2).replace(".", ",")}`,
+              icon: ArrowUpCircle,
+              color: "text-muted-foreground",
+              bg: "bg-muted",
+            },
           ].map(s => (
             <Card key={s.label} className="border-border/60">
               <CardContent className="pt-4 pb-4">
@@ -90,92 +170,116 @@ export default function SaidasPage() {
                     <s.icon className={`size-3 ${s.color}`} />
                   </div>
                 </div>
-                <p className="text-xl font-bold text-foreground truncate">{s.value}</p>
+                <p className="text-2xl font-bold text-foreground">{s.value}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Filters */}
+        {/* Filters & Action */}
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex flex-wrap gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm w-52" />
+              <Input
+                placeholder="Buscar..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 h-9 text-sm w-52"
+              />
             </div>
-            <Select value={filterProduct} onValueChange={setFilterProduct}>
+            <Select value={filterProduct} onValueChange={v => setFilterProduct(v ?? "all")}>
               <SelectTrigger className="h-9 text-sm w-48">
                 <SelectValue placeholder="Produto" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os produtos</SelectItem>
-                {products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>)}
+                {products.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2">
+          <Button onClick={openNew} size="sm" className="gap-2">
             <Plus data-icon="inline-start" className="size-4" />
-            Registrar Venda
+            Registrar Saída
           </Button>
         </div>
 
         {/* Table */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-0">
-            <CardTitle className="text-sm font-semibold">Histórico de Vendas</CardTitle>
-            <CardDescription className="text-xs">{filtered.length} venda(s) encontrada(s)</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0 mt-3">
+        <Card className="min-w-0 overflow-hidden border-border/60">
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/60 hover:bg-transparent">
                   <TableHead className="text-xs pl-6">Produto</TableHead>
                   <TableHead className="text-xs text-center">Quantidade</TableHead>
-                  <TableHead className="text-xs text-right">Valor Unit.</TableHead>
-                  <TableHead className="text-xs text-right">Total</TableHead>
-                  <TableHead className="text-xs">Responsável</TableHead>
-                  <TableHead className="text-xs">Observação</TableHead>
-                  <TableHead className="text-xs text-right pr-6">Data / Hora</TableHead>
+                  <TableHead className="hidden text-xs text-right sm:table-cell">Preço Unitário</TableHead>
+                  <TableHead className="text-xs text-right">Valor Total</TableHead>
+                  <TableHead className="hidden text-xs sm:table-cell">Responsável</TableHead>
+                  <TableHead className="hidden text-xs text-right sm:table-cell">Data / Hora</TableHead>
+                  <TableHead className="text-xs text-right pr-6">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {loading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
-                      <ShoppingCart className="size-8 mx-auto mb-2 opacity-30" />
-                      <p>Nenhuma venda encontrada</p>
+                      <Loader2 className="size-6 mx-auto mb-2 animate-spin opacity-50" />
+                      <p>Carregando histórico de vendas...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : exits.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                      <ArrowUpCircle className="size-8 mx-auto mb-2 opacity-30" />
+                      <p>Nenhuma saída encontrada</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map(exit => (
+                  exits.map(exit => (
                     <TableRow key={exit.id} className="border-border/40 hover:bg-muted/40">
                       <TableCell className="pl-6 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex size-7 items-center justify-center rounded-md bg-blue-50">
-                            <ArrowUpCircle className="size-3.5 text-blue-600" />
+                          <div className="flex size-7 items-center justify-center rounded-md bg-primary/10">
+                            <ArrowUpCircle className="size-3.5 text-primary" />
                           </div>
                           <span className="text-sm font-medium text-foreground">{exit.produtoNome}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-3 text-center">
-                        <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-semibold">
-                          -{exit.quantidade} unid.
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
+                          -{exit.quantidade}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-right text-xs text-muted-foreground">
-                        R$ {exit.valorUnitario.toFixed(2).replace(".", ",")}
+                      <TableCell className="hidden py-3 text-right text-xs text-muted-foreground sm:table-cell">
+                        R$ {(exit.valorUnitario || 0).toFixed(2).replace(".", ",")}
                       </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <span className="text-sm font-semibold text-foreground">
-                          R$ {exit.valorTotal.toFixed(2).replace(".", ",")}
-                        </span>
+                      <TableCell className="py-3 text-right text-sm font-semibold text-foreground">
+                        R$ {(exit.valorTotal || 0).toFixed(2).replace(".", ",")}
                       </TableCell>
-                      <TableCell className="py-3 text-xs text-foreground">{exit.responsavel}</TableCell>
-                      <TableCell className="py-3 text-xs text-muted-foreground max-w-[150px] truncate">
-                        {exit.observacao || "—"}
+                      <TableCell className="hidden py-3 text-xs text-muted-foreground sm:table-cell">
+                        {exit.responsavelNome || "Usuário"}
                       </TableCell>
-                      <TableCell className="py-3 pr-6 text-right text-xs text-muted-foreground">
-                        {format(new Date(exit.data), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      <TableCell className="hidden py-3 text-right text-xs text-muted-foreground sm:table-cell">
+                        {exit.dataCriacao
+                          ? format(new Date(exit.dataCriacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="py-3 pr-6">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            aria-label={`Editar saída de ${exit.produtoNome}`}
+                            onClick={() => handleEdit(exit)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -190,56 +294,92 @@ export default function SaidasPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Registrar Venda</DialogTitle>
-            <DialogDescription className="text-xs">Registre a saída de produtos por venda.</DialogDescription>
+            <DialogTitle>
+              {editingId !== null ? "Editar Saída de Venda" : "Registrar Saída de Venda"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Registre a baixa de produtos por venda direta ou pedido.
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Produto <span className="text-destructive">*</span></Label>
-              <Select value={form.produtoId} onValueChange={v => setForm(f => ({ ...f, produtoId: v }))}>
+              <Label className="text-xs font-medium">
+                Produto <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.produtoId}
+                onValueChange={v => setForm(f => ({ ...f, produtoId: v ?? "" }))}
+              >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Selecione o produto" />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map(p => (
                     <SelectItem key={p.id} value={String(p.id)}>
-                      {p.nome} — R$ {p.precoVenda.toFixed(2).replace(".", ",")}
+                      {p.nome} — R$ {p.preco.toFixed(2).replace(".", ",")} (Estoque: {p.estoque})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Quantidade <span className="text-destructive">*</span></Label>
-              <Input type="number" min="1" placeholder="0" value={form.quantidade} onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))} className="h-9 text-sm" />
+              <Label className="text-xs font-medium">
+                Quantidade Vendida <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="0"
+                value={form.quantidade}
+                onChange={e => setForm(f => ({ ...f, quantidade: e.target.value }))}
+                className="h-9 text-sm"
+              />
             </div>
             {previewTotal && (
-              <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-green-700 font-medium">Total da venda</span>
-                <span className="text-lg font-bold text-green-700">R$ {previewTotal}</span>
+              <div className="rounded-md bg-primary/10 border border-primary/20 px-3 py-2 text-xs flex justify-between items-center text-foreground font-medium">
+                <span>Total Estimado da Venda:</span>
+                <span className="text-base font-bold text-primary">R$ {previewTotal}</span>
               </div>
             )}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">Responsável <span className="text-destructive">*</span></Label>
-              <Select value={form.responsavel} onValueChange={v => setForm(f => ({ ...f, responsavel: v }))}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Selecione o responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  {responsaveis.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Responsável registrado automaticamente pelo seu usuário autenticado via token JWT.
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium">Observação</Label>
-              <Textarea placeholder="Ex: Venda balcão, encomenda..." value={form.observacao} onChange={e => setForm(f => ({ ...f, observacao: e.target.value }))} className="text-sm resize-none" rows={2} />
+              <Textarea
+                placeholder="Ex: Venda balcão, encomenda cliente..."
+                value={form.observacao}
+                onChange={e => setForm(f => ({ ...f, observacao: e.target.value }))}
+                className="text-sm resize-none"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSave} disabled={!form.produtoId || !form.quantidade || !form.responsavel}>
-              Confirmar Venda
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDialogOpen(false)}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!form.produtoId || !form.quantidade || saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                  Salvando...
+                </>
+              ) : editingId !== null ? (
+                "Salvar Alterações"
+              ) : (
+                "Registrar Saída"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

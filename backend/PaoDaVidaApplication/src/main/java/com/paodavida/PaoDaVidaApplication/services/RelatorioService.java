@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +35,7 @@ public class RelatorioService {
     private static final DateTimeFormatter DIA_FMT = DateTimeFormatter.ofPattern("dd/MM");
     private static final DateTimeFormatter MES_FMT = DateTimeFormatter.ofPattern("MMM", new Locale("pt", "BR"));
 
-    public enum Periodo { DIARIO, MENSAL }
+    public enum Periodo { DIARIO, SEMANAL, MENSAL }
 
     // ---------- (cards do topo) ----------
 
@@ -58,7 +59,11 @@ public class RelatorioService {
     // ---------- (Gráfico Produção x Vendas e Receita) ----------
     @Transactional(readOnly = true)
     public RelatorioGraficoDto grafico(Periodo periodo){
-        return periodo == Periodo.DIARIO ? graficoUltimos7dias() : graficoUltimos12meses();
+        return switch (periodo) {
+            case SEMANAL -> graficoUltimas8semanas();
+            case MENSAL -> graficoUltimos12meses();
+            case DIARIO -> graficoUltimos7dias();
+        };
     }
 
     // ---------- (Vendas por Categoria) ----------
@@ -66,7 +71,30 @@ public class RelatorioService {
     public List<CategoriaVendaDto> vendasPorCategoria() {
         Instant inicio = LocalDate.now(ZONE).minusDays(6).atStartOfDay(ZONE).toInstant();
         Instant fim = LocalDate.now(ZONE).plusDays(1).atStartOfDay(ZONE).toInstant();
-        return saidaRepository.vendasPorCategoria(inicio, fim);
+
+        List<Object[]> linhas = saidaRepository.vendasPorCategoria(inicio, fim);
+
+        BigDecimal total = linhas.stream()
+                .map(linha -> paraBigDecimal(linha[1]))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return linhas.stream()
+                .map(linha -> {
+                    BigDecimal quantidade = paraBigDecimal(linha[1]);
+                    BigDecimal percentual = total.compareTo(BigDecimal.ZERO) == 0
+                            ? BigDecimal.ZERO
+                            : quantidade.multiply(BigDecimal.valueOf(100))
+                                    .divide(total, 1, RoundingMode.HALF_UP);
+                    return new CategoriaVendaDto(String.valueOf(linha[0]), quantidade, percentual);
+                })
+                .toList();
+    }
+
+    private BigDecimal paraBigDecimal(Object valor) {
+        if (valor == null) return BigDecimal.ZERO;
+        if (valor instanceof BigDecimal decimal) return decimal;
+        if (valor instanceof Number numero) return new BigDecimal(numero.toString());
+        return BigDecimal.ZERO;
     }
 
     // ---------- (Top Produtos) -----------
@@ -105,6 +133,41 @@ public class RelatorioService {
         }
 
         return new RelatorioGraficoDto(producaoVendas, receita);
+    }
+
+    private RelatorioGraficoDto graficoUltimas8semanas(){
+        LocalDate segundaAtual = primeiraFeiraDaSemana(LocalDate.now(ZONE));
+        LocalDate inicio = segundaAtual.minusWeeks(7);
+        Instant inicioInstante = inicio.atStartOfDay(ZONE).toInstant();
+        Instant fimInstante = segundaAtual.plusWeeks(1).atStartOfDay(ZONE).toInstant();
+
+        List<EntradaModel> entradas = entradaRepository.findAllNoPeriodo(inicioInstante, fimInstante);
+        List<SaidaModel> saidas = saidaRepository.findAllNoPeriodo(inicioInstante, fimInstante);
+
+        Map<LocalDate, BigDecimal> producaoPorSemana = agruparPorSemana(entradas, EntradaModel::getDataCriacao, EntradaModel::getQuantidade);
+        Map<LocalDate, BigDecimal> vendaPorSemana = agruparPorSemana(saidas, SaidaModel::getDataCriacao, SaidaModel::getQuantidade);
+        Map<LocalDate, BigDecimal> receitaPorSemana = agruparPorSemana(saidas, SaidaModel::getDataCriacao, SaidaModel::getValorTotal);
+
+        List<ProducaoVendasPontoDto> producaoVendas = new ArrayList<>();
+        List<ReceitaPontoDto> receita = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++) {
+            LocalDate semana = inicio.plusWeeks(i);
+            String label = semana.format(DIA_FMT); // segunda-feira da semana (dd/MM)
+            producaoVendas.add(new ProducaoVendasPontoDto(
+                    label,
+                    producaoPorSemana.getOrDefault(semana, BigDecimal.ZERO),
+                    vendaPorSemana.getOrDefault(semana, BigDecimal.ZERO)
+            ));
+            receita.add(new ReceitaPontoDto(label, receitaPorSemana.getOrDefault(semana, BigDecimal.ZERO)));
+        }
+
+        return new RelatorioGraficoDto(producaoVendas, receita);
+    }
+
+    /** Segunda-feira da semana ISO da data informada. */
+    private LocalDate primeiraFeiraDaSemana(LocalDate data) {
+        return data.with(WeekFields.ISO.dayOfWeek(), 1);
     }
 
     private RelatorioGraficoDto graficoUltimos12meses(){
@@ -150,6 +213,14 @@ public class RelatorioService {
             List<T> registros, Function<T, Instant> dataExtractor, Function<T, BigDecimal> valorExtractor) {
         return registros.stream().collect(Collectors.groupingBy(
                 r -> YearMonth.from(dataExtractor.apply(r).atZone(ZONE).toLocalDate()),
+                Collectors.reducing(BigDecimal.ZERO, valorExtractor, BigDecimal::add)
+        ));
+    }
+
+    private <T> Map<LocalDate, BigDecimal> agruparPorSemana(
+            List<T> registros, Function<T, Instant> dataExtractor, Function<T, BigDecimal> valorExtractor) {
+        return registros.stream().collect(Collectors.groupingBy(
+                r -> primeiraFeiraDaSemana(dataExtractor.apply(r).atZone(ZONE).toLocalDate()),
                 Collectors.reducing(BigDecimal.ZERO, valorExtractor, BigDecimal::add)
         ));
     }
