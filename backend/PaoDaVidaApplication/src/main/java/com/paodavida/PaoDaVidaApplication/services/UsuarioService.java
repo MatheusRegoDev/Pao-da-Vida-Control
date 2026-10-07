@@ -88,7 +88,7 @@ public class UsuarioService {
 
         usuarioModel.setNome(dto.nome());
         usuarioModel.setEmail(dto.email());
-        usuarioModel.setCargoUsuario(dto.cargo());
+        usuarioModel.setCargoUsuario(dto.cargoUsuario());
         usuarioModel.setSetor(dto.setor());
         usuarioModel.setStatus(dto.status());
 

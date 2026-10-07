@@ -58,6 +58,32 @@ Atualmente, o **Pão da Vida Control** encontra-se na fase de **desenvolvimento 
 - Distribuição do estoque por categoria em gráfico de rosca.
 
 
+## Como executar
+
+**Requisitos:** Docker + Docker Compose. O `.env` da raiz deve estar preenchido
+(copie o `.env.example` e preencha as variáveis).
+
+```bash
+./run.sh            # Sobe tudo: PostgreSQL + Backend (8080) + Frontend (3000)
+./run.sh status     # Portas e saúde de cada serviço
+./run.sh logs -f    # Logs em tempo real
+./run.sh down       # Para tudo (os dados do banco são mantidos)
+./run.sh help       # Lista todos os comandos
+```
+
+O script verifica Docker/`.env`, sobe os serviços na ordem certa e espera todos ficarem
+`healthy` antes de mostrar as URLs:
+
+- **App:** <http://localhost:3000>
+- **Swagger da API:** <http://localhost:8080/swagger-ui.html>
+- **Credenciais:** `ADMIN_EMAIL` / `ADMIN_PASS` do `.env`
+
+Para desenvolvimento com hot-reload (banco no Docker, código na máquina): `./run.sh dev`.
+Mais detalhes em [docs/DOCKER.md](docs/DOCKER.md) e na
+[Integração Frontend](docs/INTEGRACAO_FRONTEND.md#como-rodar-ordem-correta).
+
+---
+
 ## Tecnologias e Stack Utilizada
 
 ### Backend
@@ -85,7 +111,9 @@ Atualmente, o **Pão da Vida Control** encontra-se na fase de **desenvolvimento 
 
 ### Documentação
 - **[Modelo de Domínio (Diagrama de Classe UML)](docs/diagrama-classe.md)** - Arquitetura lógica do banco de dados relacional e relacionamentos estruturais (adaptado ao frontend).
-- **[Arquitetura do Sistema](ARCHITECTURE.md)** - Visão detalhada da arquitetura do frontend, backend e fluxo de dados do projeto.
+- **[Arquitetura do Sistema](docs/ARCHITECTURE.md)** - Visão detalhada da arquitetura do frontend, backend e fluxo de dados do projeto.
+- **[Integração Frontend ↔ Backend](docs/INTEGRACAO_FRONTEND.md)** - Passo a passo de como o Next.js se conecta à API (JWT, services, proteção de rotas).
+- **[Docker](docs/DOCKER.md)** - Como rodar a stack inteira em containers, com os problemas reais encontrados.
 
 ## Autor
 

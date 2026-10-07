@@ -56,7 +56,9 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${POSTGRESDB_NAME}
+    # DB_HOST: "localhost" quando roda fora do Docker;
+    # o docker-compose define DB_HOST=postgres (nome do serviço na rede)
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRESDB_NAME}
     username: ${POSTGRESDB_USER}
     password: ${POSTGRESDB_PASS}
     driver-class-name: org.postgresql.Driver

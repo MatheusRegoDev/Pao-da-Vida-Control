@@ -1,4 +1,17 @@
+# ============================================================
+# Pão da Vida Control — stack completa em Docker
+#
+#   docker compose up -d     → sobe banco + backend + frontend
+#   docker compose down      → para tudo (o volume do banco permanece)
+#   docker compose logs -f   → acompanha os logs
+#
+# Variáveis lidas do arquivo .env na raiz do projeto.
+# ============================================================
+
 services:
+  # ----------------------------------------------------------
+  # 1) Banco de dados (PostgreSQL 16)
+  # ----------------------------------------------------------
   postgres:
     image: postgres:16-alpine
     container_name: pao_da_vida_control
@@ -8,7 +21,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRESDB_PASS}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -18,7 +31,73 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
+  # ----------------------------------------------------------
+  # 2) Backend — Spring Boot (API REST) na porta 8080
+  #    Build: backend/PaoDaVidaApplication/Dockerfile
+  # ----------------------------------------------------------
+  backend:
+    build:
+      context: ./backend/PaoDaVidaApplication
+      dockerfile: Dockerfile
+    container_name: pao_da_vida_backend
+    ports:
+      - "${BACK_PORT:-8080}:8080"
+    environment:
+      # Host/porta DENTRO da rede do Docker (não é a porta do host)
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      POSTGRESDB_NAME: ${POSTGRESDB_NAME}
+      POSTGRESDB_USER: ${POSTGRESDB_USER}
+      POSTGRESDB_PASS: ${POSTGRESDB_PASS}
+      # JWT e admin inicial
+      JWT_KEY: ${JWT_KEY}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASS: ${ADMIN_PASS}
+      # Origem liberada no CORS = endereço que o NAVEGADOR usa
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pao_da_vida-network
+    healthcheck:
+      # /v3/api-docs (Swagger) é público e responde 200 sem login
+      # 127.0.0.1 em vez de "localhost" (evita IPv6 dentro do container)
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:8080/v3/api-docs >/dev/null || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # ----------------------------------------------------------
+  # 3) Frontend — Next.js na porta 3000
+  #    Build: frontend/Dockerfile (multi-stage + output standalone)
+  # ----------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Embutida no bundle durante o `next build`
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    container_name: pao_da_vida_frontend
+    ports:
+      - "${FRONT_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pao_da_vida-network
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_data:
     driver: local
@@ -26,6 +105,3 @@ volumes:
 networks:
   pao_da_vida-network:
     driver: bridge
-
-    
-    

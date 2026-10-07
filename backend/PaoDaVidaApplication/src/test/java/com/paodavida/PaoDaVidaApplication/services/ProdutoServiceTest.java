@@ -22,12 +22,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
 import static com.paodavida.PaoDaVidaApplication.models.enums.UnidadeMedida.UNIDADE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -202,7 +204,7 @@ class ProdutoServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<ProdutoModel> produtoPage = new PageImpl<>(java.util.List.of(produtoModel1, produtoModel2), pageable, 2);
 
-        when(produtoRepository.findAll(pageable)).thenReturn(produtoPage);
+        when(produtoRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(produtoPage);
         // Act
         var resultado = produtoService.findAll(null, null, null, pageable);
         // Assert

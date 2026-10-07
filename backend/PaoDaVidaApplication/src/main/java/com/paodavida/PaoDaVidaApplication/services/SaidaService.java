@@ -138,6 +138,7 @@ public class SaidaService {
     private SaidaResponseDto mapToResponseDto(SaidaModel saida) {
         return new SaidaResponseDto(
                 saida.getId(),
+                saida.getProduto().getId(),
                 saida.getProduto().getNome(),
                 saida.getQuantidade(),
                 saida.getValorUnitario(),
